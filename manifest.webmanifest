@@ -1,0 +1,16 @@
+{
+  "name": "V20 Character Sheet",
+  "short_name": "V20 Sheet",
+  "description": "Vampire: The Masquerade V20 character sheet. Holds ST-issued sheet data on the device until new data is pasted in.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#151110",
+  "theme_color": "#151110",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>V20 Sheet</title>
+<meta name="theme-color" content="#151110">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="V20 Sheet">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#e3dbc9; --ink:#221d1a; --oxblood:#6b1219; --tarnish:#8a7440;
+    --bone-dk:#d6cbb4; --rule:#4a3f36; --redact:#161210; --dark:#151110;
+    --mine:#2f5d4a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{background:var(--dark);}
+  body{
+    font-family:'EB Garamond', Georgia, serif; color:var(--ink);
+    background:var(--bone);
+    background-image:radial-gradient(ellipse at 50% 0%, rgba(255,252,240,.55), rgba(0,0,0,0) 60%),
+                     radial-gradient(ellipse at 50% 115%, rgba(107,18,25,.10), rgba(0,0,0,0) 55%);
+    max-width:1060px; margin:0 auto; padding:0 30px 80px;
+    box-shadow:0 0 60px rgba(0,0,0,.7);
+    font-size:15.5px; line-height:1.35;
+    -webkit-text-size-adjust:100%;
+  }
+  @media(max-width:640px){ body{ padding:0 12px 80px; font-size:16px; } }
+
+  /* ---------- app chrome ---------- */
+  .appbar{
+    position:sticky; top:0; z-index:40; margin:0 -30px 10px; padding:8px 30px;
+    padding-top:calc(8px + env(safe-area-inset-top));
+    background:var(--dark); color:var(--bone);
+    border-bottom:2px solid var(--oxblood);
+    display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  }
+  @media(max-width:640px){ .appbar{ margin:0 -12px 10px; padding-left:12px; padding-right:12px; } }
+  .appbar select{
+    font-family:'IM Fell English SC', serif; font-size:15px; letter-spacing:.06em;
+    background:#221c1a; color:var(--bone); border:1px solid var(--rule); padding:5px 8px;
+    max-width:min(46vw,300px); flex:1 1 auto;
+  }
+  .appbar .spacer{flex:1 1 auto;}
+  .iconbtn{
+    font-family:'Courier Prime', monospace; font-size:12px; letter-spacing:.04em;
+    background:transparent; color:var(--bone); border:1px solid var(--rule);
+    padding:5px 9px; cursor:pointer; white-space:nowrap; min-height:32px;
+  }
+  .iconbtn:hover{border-color:var(--tarnish); color:#fff;}
+  .iconbtn.on{background:var(--oxblood); border-color:var(--oxblood); color:#fff;}
+  .kindtag{font-family:'Courier Prime', monospace; font-size:10.5px; letter-spacing:.1em;
+    border:1px solid var(--tarnish); color:var(--tarnish); padding:1px 5px;}
+
+  h1{font-family:'IM Fell English SC', serif; font-weight:400; text-align:center;
+     font-size:34px; letter-spacing:.06em; color:var(--oxblood); margin:14px 0 2px;}
+  @media(max-width:640px){ h1{font-size:26px;} }
+  .subtitle{font-family:'IM Fell English SC', serif; text-align:center; font-size:15px;
+     letter-spacing:.28em; color:var(--rule); border-bottom:3px double var(--oxblood);
+     padding-bottom:10px; margin-bottom:14px;}
+  .issue-line{font-family:'Courier Prime', monospace; font-size:11.5px; text-align:center;
+     color:var(--rule); margin-bottom:16px;}
+  h2{font-family:'IM Fell English SC', serif; font-weight:400; font-size:17px;
+     letter-spacing:.18em; color:var(--oxblood); text-align:center;
+     border-top:1.5px solid var(--oxblood); border-bottom:1.5px solid var(--oxblood);
+     padding:3px 0; margin:22px 0 10px;}
+  h3{font-family:'IM Fell English SC', serif; font-weight:400; font-size:14.5px;
+     letter-spacing:.14em; text-align:center; color:var(--ink); margin-bottom:6px;}
+  .cols3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:0 26px;}
+  .cols2{display:grid; grid-template-columns:1fr 1fr; gap:0 26px;}
+  .cols4{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:0 20px;}
+  @media(max-width:860px){.cols3,.cols4{grid-template-columns:1fr 1fr;} .cols2{grid-template-columns:1fr;}}
+  @media(max-width:560px){.cols3,.cols4{grid-template-columns:1fr;}}
+
+  .trait{display:flex; justify-content:space-between; align-items:baseline;
+     border-bottom:1px dotted var(--rule); padding:2.5px 0; gap:8px;}
+  .trait .tname{overflow:hidden; text-overflow:ellipsis;}
+  .trait .spec{font-style:italic; font-size:13px; color:var(--rule);}
+  .dots{white-space:nowrap; letter-spacing:2px; font-size:15px; flex-shrink:0;}
+  .dot-f{color:var(--ink);} .dot-e{color:var(--ink); opacity:.35;}
+  .dots.editable{cursor:pointer; letter-spacing:4px; font-size:19px;}
+  .dots.editable span{padding:0 1px;}
+  @media(max-width:640px){ .dots.editable{font-size:22px; letter-spacing:5px;} }
+
+  .idrow{display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px 26px; margin-bottom:4px;}
+  @media(max-width:860px){.idrow{grid-template-columns:1fr 1fr;}}
+  @media(max-width:560px){.idrow{grid-template-columns:1fr;}}
+  .idfield{border-bottom:1px solid var(--rule); padding:2px 0; font-size:14.5px;}
+  .idfield b{font-family:'IM Fell English SC', serif; font-weight:400; font-size:13px;
+     letter-spacing:.08em; color:var(--oxblood); margin-right:6px;}
+
+  .redactbar{display:inline-block; background:var(--redact); color:var(--redact);
+     border-radius:1px; padding:0 6px; min-width:110px; height:15px; vertical-align:middle;
+     box-shadow:inset 0 0 4px rgba(0,0,0,.9); user-select:none;}
+  .redactbar.short{min-width:70px;}
+  .workinglabel{font-style:italic; color:var(--rule);}
+
+  .band{border:1.5px solid var(--rule); background:rgba(255,252,240,.35);
+     padding:8px 12px; margin-bottom:10px;}
+  .band .bandtitle{font-family:'IM Fell English SC', serif; font-size:13.5px;
+     letter-spacing:.16em; color:var(--oxblood); display:block; margin-bottom:4px;}
+
+  .boxes{display:flex; flex-wrap:wrap; gap:5px; margin-top:4px;}
+  .wpbox,.hbox{width:26px; height:26px; border:1.5px solid var(--ink); cursor:pointer;
+     display:inline-flex; align-items:center; justify-content:center;
+     font-family:'Courier Prime', monospace; font-weight:700; font-size:15px;
+     background:rgba(255,252,240,.6); user-select:none;}
+  .wpbox.spent{background:var(--ink); color:var(--bone);}
+  .healthrow{display:flex; justify-content:space-between; align-items:center;
+     border-bottom:1px dotted var(--rule); padding:3px 0; gap:8px;}
+  .healthrow .hlabel{font-size:14px;}
+  .healthrow .hpen{font-family:'Courier Prime', monospace; font-size:12px; color:var(--rule); width:34px; text-align:right;}
+  .hint{font-size:12px; font-style:italic; color:var(--rule); margin-top:4px;}
+
+  select,input[type=text],input[type=number],textarea{
+     font-family:'Courier Prime', monospace; font-size:14px; color:var(--ink);
+     background:rgba(255,252,240,.75); border:1px solid var(--rule); padding:4px 6px;
+     max-width:100%;}
+  textarea{width:100%; resize:vertical; line-height:1.35;}
+  button{font-family:'IM Fell English SC', serif; font-size:13.5px; letter-spacing:.08em;
+     color:var(--bone); background:var(--oxblood); border:1px solid #3d0a0e;
+     padding:7px 14px; cursor:pointer; min-height:34px;}
+  button:hover{background:#7f1620;}
+  button.quiet{background:transparent; color:var(--oxblood); border:1px solid var(--oxblood);}
+  button.quiet:hover{background:rgba(107,18,25,.08);}
+  button.tiny{padding:2px 8px; min-height:0; font-size:12px;}
+
+  ul.plain{list-style:none;} ul.plain li{border-bottom:1px dotted var(--rule); padding:3px 0; font-size:14px;}
+  ol.threads{margin-left:20px;} ol.threads li{padding:3px 0; font-size:14px; border-bottom:1px dotted rgba(74,63,54,.4);}
+
+  table.inv{width:100%; border-collapse:collapse; font-size:13.5px;}
+  table.inv th{font-family:'IM Fell English SC', serif; font-weight:400; letter-spacing:.08em;
+     font-size:12.5px; color:var(--oxblood); text-align:left; border-bottom:1px solid var(--rule); padding:2px 4px;}
+  table.inv td{border-bottom:1px dotted var(--rule); padding:3px 4px; vertical-align:top;}
+  table.inv td input[type=text]{width:100%;}
+  .statuschip{cursor:pointer; font-family:'Courier Prime', monospace; font-size:11.5px;
+     border:1px solid var(--rule); padding:2px 7px; white-space:nowrap; user-select:none;}
+  .statuschip.consumed,.statuschip.transferred{opacity:.55; text-decoration:line-through;}
+
+  /* ---------- edit affordances ---------- */
+  .edited{ box-shadow:inset 2px 0 0 var(--tarnish); padding-left:5px; }
+  .edited-mark{ font-family:'Courier Prime',monospace; font-size:10px; color:var(--tarnish);
+     letter-spacing:.08em; margin-left:5px; }
+  .added{ box-shadow:inset 2px 0 0 var(--mine); padding-left:5px; }
+  .added-mark{ font-family:'Courier Prime',monospace; font-size:10px; color:var(--mine);
+     letter-spacing:.08em; margin-left:5px; }
+  .hiddenrow{ opacity:.4; text-decoration:line-through; }
+  input.ed, textarea.ed{ width:100%; }
+  input.ed.short{ width:auto; min-width:90px; }
+  .rowtools{ display:inline-flex; gap:4px; margin-left:6px; }
+  .rowtools button{ font-size:11px; padding:0 6px; min-height:0; }
+  .addrow{ margin-top:6px; }
+  body.locked .editonly{ display:none !important; }
+  body:not(.locked) .lockedonly{ display:none !important; }
+  body:not(.locked){ background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(255,252,240,.55), rgba(0,0,0,0) 60%),
+      repeating-linear-gradient(45deg, rgba(138,116,64,.055) 0 12px, rgba(0,0,0,0) 12px 24px); }
+
+  /* ---------- dice ---------- */
+  .diceface{ display:inline-flex; align-items:center; justify-content:center;
+     width:38px; height:38px; margin:3px; border:1.5px solid var(--rule);
+     background:rgba(255,252,240,.8); font-family:'Courier Prime', monospace;
+     font-weight:700; font-size:17px; }
+  .diceface.ten{ background:var(--ink); color:var(--bone); border-color:var(--ink); }
+  .diceface.one{ background:var(--oxblood); color:var(--bone); border-color:#3d0a0e; }
+  .dicebar{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .dicecount{ font-family:'Courier Prime', monospace; font-size:22px; font-weight:700;
+     min-width:2.2em; text-align:center; }
+  .quickpool{ display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+  .quickpool button{ padding:3px 9px; min-height:0; font-size:12px;
+     font-family:'Courier Prime',monospace; }
+  .rollhist{ font-family:'Courier Prime', monospace; font-size:12px; margin-top:8px;
+     max-height:150px; overflow-y:auto; }
+  .rollhist div{ border-bottom:1px dotted rgba(74,63,54,.35); padding:2px 0; }
+
+  #changelog{font-family:'Courier Prime', monospace; font-size:12px; max-height:220px;
+     overflow-y:auto; border:1px solid var(--rule); background:rgba(255,252,240,.6); padding:6px 8px;}
+  #changelog div{border-bottom:1px dotted rgba(74,63,54,.35); padding:1.5px 0;}
+
+  .iopanel{border:2px solid var(--oxblood); background:rgba(107,18,25,.05); padding:12px 14px; margin-top:26px;}
+  .iopanel h2{margin-top:0;}
+  .iogrid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media(max-width:860px){.iogrid{grid-template-columns:1fr;}}
+  .iopanel textarea{height:130px; font-size:12px;}
+  .iobtns{display:flex; gap:8px; margin-top:6px; flex-wrap:wrap;}
+  .statusmsg{font-family:'Courier Prime', monospace; font-size:12px; margin-top:6px; min-height:16px;}
+  .statusmsg.ok{color:#2c5a2e;} .statusmsg.err{color:var(--oxblood);}
+  .savenote{font-family:'Courier Prime', monospace; font-size:11px; color:var(--rule); text-align:center; margin-top:8px;}
+  .addl pre{font-family:'Courier Prime', monospace; font-size:12px; white-space:pre-wrap;}
+
+  /* ---------- empty state ---------- */
+  .emptystate{ border:2px dashed var(--oxblood); background:rgba(107,18,25,.05);
+     padding:22px 18px; text-align:center; margin:20px 0; }
+  .emptystate h3{ font-size:17px; margin-bottom:8px; }
+  .emptystate p{ font-size:14px; color:var(--rule); max-width:52ch; margin:0 auto 10px; }
+
+  /* ---------- modal ---------- */
+  .modalwrap{ position:fixed; inset:0; z-index:100; background:rgba(10,8,7,.82);
+     display:none; align-items:flex-start; justify-content:center; padding:20px 12px;
+     overflow-y:auto; }
+  .modalwrap.open{ display:flex; }
+  .modal{ background:var(--bone); border:2px solid var(--oxblood); max-width:780px; width:100%;
+     padding:16px 18px calc(16px + env(safe-area-inset-bottom)); box-shadow:0 0 40px rgba(0,0,0,.8);
+     margin:auto 0; }
+  .modal h2{ margin-top:0; }
+  .difgroup{ border:1px solid var(--rule); background:rgba(255,252,240,.5);
+     padding:8px 10px; margin-bottom:8px; }
+  .difhead{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+  .diftitle{ font-family:'IM Fell English SC', serif; font-size:14px; letter-spacing:.12em; color:var(--oxblood); }
+  .difchoice{ display:flex; gap:4px; }
+  .difchoice button{ font-size:11.5px; padding:2px 9px; min-height:0;
+     font-family:'Courier Prime',monospace; letter-spacing:0; }
+  .difchoice button.sel{ background:var(--ink); color:var(--bone); border-color:var(--ink); }
+  .difchoice button:not(.sel){ background:transparent; color:var(--rule); border:1px solid var(--rule); }
+  ul.diflist{ list-style:none; margin-top:6px; font-family:'Courier Prime', monospace; font-size:12px; }
+  ul.diflist li{ padding:1.5px 0; border-bottom:1px dotted rgba(74,63,54,.3); }
+  ul.diflist li.add::before{ content:"+ "; color:var(--mine); }
+  ul.diflist li.rem::before{ content:"\2212 "; color:var(--oxblood); }
+  ul.diflist li.chg::before{ content:"\2192 "; color:var(--tarnish); }
+  .conflict{ border-left:3px solid var(--oxblood); padding-left:8px; margin-top:6px;
+     font-size:12.5px; color:var(--oxblood); font-family:'Courier Prime',monospace; }
+  .modalbtns{ display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;
+     position:sticky; bottom:0; background:var(--bone); padding-top:10px;
+     border-top:1px solid var(--rule); }
+
+  .toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:16px; z-index:120;
+     background:var(--dark); color:var(--bone); border:1px solid var(--tarnish);
+     font-family:'Courier Prime',monospace; font-size:12.5px; padding:8px 14px;
+     max-width:90vw; display:none; }
+  .toast.show{ display:block; }
+</style>
+</head>
+<body class="locked">
+
+<div class="appbar">
+  <select id="slotSel" onchange="switchSlot(this.value)" title="Active character"></select>
+  <span class="kindtag" id="kindTag">PC</span>
+  <button class="iconbtn" onclick="openSlotMenu()">Slots</button>
+  <span class="spacer"></span>
+  <button class="iconbtn" id="lockBtn" onclick="toggleLock()">&#128274; Locked</button>
+  <button class="iconbtn" onclick="jumpTo('diceSection')">Dice</button>
+  <button class="iconbtn" onclick="jumpTo('ioSection')">Data</button>
+</div>
+
+<div id="emptyState" class="emptystate" style="display:none;">
+  <h3>No sheet data yet</h3>
+  <p>This character slot is empty. Paste the ST&rsquo;s SHEET DATA block into the box at the bottom and press <b>Load sheet data</b>. It stays here until you paste new data &mdash; closing the app doesn&rsquo;t clear it.</p>
+  <button onclick="jumpTo('ioSection')">Go to the paste box</button>
+</div>
+
+<div id="sheetBody">
+  <h1 id="charname">Vampire: The Masquerade</h1>
+  <div class="subtitle">CHARACTER SHEET &middot; V20</div>
+  <div class="issue-line" id="issueline"></div>
+
+  <div class="idrow" id="identityrow"></div>
+
+  <div id="sec-attributes"><h2>Attributes</h2><div class="cols3" id="attributes"></div></div>
+
+  <div id="sec-abilities">
+    <h2>Abilities</h2>
+    <div style="text-align:center; margin:-4px 0 6px;"><label class="hint" style="cursor:pointer;"><input type="checkbox" id="zeroTog" onchange="zeroTog()"> show unrated abilities (V20 roster &mdash; zero dots, not a hint)</label></div>
+    <div class="cols3" id="abilities"></div>
+  </div>
+
+  <div id="sec-advantages">
+    <h2>Advantages</h2>
+    <div class="cols3">
+      <div id="col-disc"><h3>Disciplines</h3><div id="disciplines"></div></div>
+      <div id="col-bg"><h3>Backgrounds</h3><div id="backgrounds"></div></div>
+      <div id="col-virt"><h3>Virtues</h3><div id="virtues"></div></div>
+    </div>
+  </div>
+
+  <div id="sec-condition">
+    <h2>Condition</h2>
+    <div class="cols4">
+      <div class="band" id="band-hum"><span class="bandtitle">HUMANITY</span><div id="humanity"></div></div>
+      <div class="band" id="band-wp"><span class="bandtitle">WILLPOWER</span><div id="willpower"></div>
+        <div class="hint">Tap a box to spend/restore. Permanent rating is ST-issued.</div></div>
+      <div class="band"><span class="bandtitle">BLOOD</span><div id="blood"></div></div>
+      <div class="band"><span class="bandtitle">HEALTH</span><div id="health"></div>
+        <div class="hint">Tap a level to cycle: clear &rarr; / bashing &rarr; X lethal &rarr; &#10033; agg.</div></div>
+    </div>
+  </div>
+
+  <div class="cols2" id="sec-mfxp">
+    <div class="band" id="band-mf"><span class="bandtitle">MERITS &amp; FLAWS</span><ul class="plain" id="meritsflaws"></ul>
+      <div class="editonly addrow"><button class="quiet tiny" onclick="addTo('meritsFlaws')">+ add line</button></div></div>
+    <div class="band" id="band-xp"><span class="bandtitle">EXPERIENCE</span><div id="xp"></div></div>
+  </div>
+
+  <div id="sec-chronicle">
+    <h2>Chronicle</h2>
+    <div class="cols2">
+      <div class="band" id="band-vinc"><span class="bandtitle">VINCULUM &mdash; FELT</span><div id="vinculum"></div></div>
+      <div class="band" id="band-bond"><span class="bandtitle">BOND &amp; ANCHOR</span><div id="bondanchor"></div></div>
+    </div>
+  </div>
+
+  <div class="band" id="band-mat"><span class="bandtitle">MATERIEL OF RECORD (tap status to mark carried / stored / consumed / transferred)</span>
+    <div id="materiel"></div>
+    <div class="editonly addrow"><button class="quiet tiny" onclick="addTo('materiel')">+ add item</button></div></div>
+
+  <div id="sec-threads"><h2>Threads &mdash; the board, plain language</h2>
+    <div class="band"><ol class="threads" id="threads"></ol>
+      <div class="editonly addrow"><button class="quiet tiny" onclick="addTo('threads')">+ add thread</button></div></div>
+    <div class="band" id="band-scene"><span class="bandtitle">SCENE AT PAUSE</span><div id="scene" style="font-size:14px;"></div></div>
+  </div>
+
+  <div class="band" id="band-sheetnotes"><span class="bandtitle">SHEET NOTES (ST)</span><div id="sheetnotes" style="font-size:14px; white-space:pre-wrap;"></div></div>
+
+  <div class="addl" id="additional"></div>
+</div>
+
+<h2 id="diceSection">Dice</h2>
+<div class="band">
+  <div class="dicebar">
+    <button class="quiet" onclick="bumpDice(-1)" style="min-width:44px;">&minus;</button>
+    <span class="dicecount" id="diceCount">6</span>
+    <button class="quiet" onclick="bumpDice(1)" style="min-width:44px;">+</button>
+    <input type="text" id="rollLabel" placeholder="label, e.g. Perception + Alertness" style="flex:1 1 200px; min-width:140px;">
+    <button onclick="rollDice()">Roll d10s</button>
+  </div>
+  <div class="quickpool" id="quickPool"></div>
+  <div id="diceOut" style="margin-top:10px; min-height:44px;"></div>
+  <div class="hint">Faces only &mdash; no success counting, no botch call. 10s are inked black, 1s are inked red, purely so they&rsquo;re easy to pick out. You read the pool.</div>
+  <div class="rollhist" id="rollHist"></div>
+  <div class="iobtns"><button class="quiet tiny" onclick="clearRolls()">Clear roll history</button></div>
+</div>
+
+<h2>Player Layer <span style="font-size:12px; letter-spacing:.05em;">(yours &mdash; survives sheet reissue)</span></h2>
+<div class="band"><span class="bandtitle">NOTES</span>
+  <textarea id="notes" rows="6" placeholder="Session notes, suspicions, reminders. Saved into the player layer, not the base sheet."></textarea></div>
+<div class="band"><span class="bandtitle">INVENTORY &mdash; PLAYER ADDITIONS</span>
+  <table class="inv" id="invtable"><thead><tr><th style="width:32%">Item</th><th>Note</th><th style="width:104px">Status</th><th style="width:30px"></th></tr></thead><tbody></tbody></table>
+  <div class="iobtns" style="margin-top:8px;"><button class="quiet" onclick="addInvRow()">+ Add item</button></div></div>
+<div class="band"><span class="bandtitle">CHANGE LOG</span>
+  <div id="changelog"></div>
+  <div class="iobtns" style="margin-top:8px;">
+    <input type="text" id="manualLogEntry" placeholder="Manual entry, e.g. +1 WP night rising" style="flex:1; min-width:180px;">
+    <button class="quiet" onclick="manualLog()">Log it</button>
+    <button class="quiet" onclick="clearLog()">Clear log</button></div></div>
+
+<div class="iopanel" id="ioSection">
+  <h2 style="border-top:none;">Import / Export</h2>
+  <div class="iogrid">
+    <div>
+      <h3>Base Sheet (ST-issued)</h3>
+      <textarea id="sheetIO" placeholder="Paste a SHEET DATA block here, then Load. You'll get a review screen before anything changes."></textarea>
+      <div class="iobtns">
+        <button onclick="loadSheet()">Load sheet data</button>
+        <button class="quiet" onclick="exportSheet()">Export sheet data</button>
+      </div>
+      <div class="statusmsg" id="sheetMsg"></div>
+    </div>
+    <div>
+      <h3>This Slot / All Slots</h3>
+      <textarea id="playerIO" placeholder="Export before a phone reset. Paste a saved slot or full backup block here to restore."></textarea>
+      <div class="iobtns">
+        <button onclick="exportSlot()">Export this slot</button>
+        <button onclick="importBlock()">Import block</button>
+      </div>
+      <div class="iobtns">
+        <button class="quiet" onclick="downloadAll()">Download full backup .json</button>
+        <button class="quiet" onclick="exportAll()">Export all slots</button>
+        <button class="quiet" onclick="resetPlayerLayer()">Reset player layer</button>
+      </div>
+      <div class="statusmsg" id="playerMsg"></div>
+    </div>
+  </div>
+  <div class="savenote" id="autosaveNote">Everything saves to this device automatically. Storage is per-device &mdash; a phone and a laptop do not share. Export is the portable record.</div>
+</div>
+
+<!-- ============ MODALS ============ -->
+<div class="modalwrap" id="reviewModal">
+  <div class="modal">
+    <h2 style="border-top:none;">Incoming sheet data</h2>
+    <div id="reviewMeta" class="issue-line" style="text-align:left; margin-bottom:10px;"></div>
+    <div id="reviewBody"></div>
+    <div class="modalbtns">
+      <button onclick="commitReview()">Apply selections</button>
+      <button class="quiet" onclick="reviewAll('new')">Take all ST</button>
+      <button class="quiet" onclick="reviewAll('mine')">Keep all mine</button>
+      <button class="quiet" onclick="closeModal('reviewModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modalwrap" id="slotModal">
+  <div class="modal">
+    <h2 style="border-top:none;">Character slots</h2>
+    <div id="slotList"></div>
+    <div class="iobtns" style="margin-top:12px;">
+      <button onclick="newSlot('PC')">+ New PC</button>
+      <button onclick="newSlot('NPC')">+ New NPC</button>
+      <button class="quiet" onclick="closeModal('slotModal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ====================== CONSTANTS ====================== */
+const LS_KEY = "vtm_sheets_v2";
+const HEALTH_LEVELS = [
+  ["Bruised",""],["Hurt","-1"],["Injured","-1"],["Wounded","-2"],["Mauled","-2"],["Crippled","-5"],["Incapacitated",""]
+];
+const BLOOD_STATES = ["Sated","Comfortable","Comfortable — running warm","Hungry","Burning"];
+const KNOWN_KEYS = ["schema","issuedBy","asOf","identity","attributes","abilities","disciplines","disciplineNote",
+  "backgrounds","virtues","humanity","willpowerPerm","bloodNote","meritsFlaws","xp","vinculum","vinculumNote",
+  "bond","anchor","materiel","threads","scene","sheetNotes"];
+const V20_ROSTER = {
+  "Talents": ["Alertness","Athletics","Awareness","Brawl","Empathy","Expression","Intimidation","Leadership","Streetwise","Subterfuge"],
+  "Skills": ["Animal Ken","Crafts","Drive","Etiquette","Firearms","Larceny","Melee","Performance","Stealth","Survival"],
+  "Knowledges": ["Academics","Computer","Finance","Investigation","Law","Medicine","Occult","Politics","Science","Technology"]
+};
+const ATTR_GROUPS = {
+  "Physical":["Strength","Dexterity","Stamina"],
+  "Social":["Charisma","Manipulation","Appearance"],
+  "Mental":["Perception","Intelligence","Wits"]
+};
+const MAT_CYCLE = ["carried","stored","consumed","transferred"];
+
+/* ====================== STATE ====================== */
+let DB = null;          /* whole database, all slots */
+let SLOT = null;        /* active slot object */
+let SHEET = {};         /* effective sheet = ST sheet + your edits */
+let UNLOCKED = false;
+let DICE_N = 6;
+let PENDING = null;     /* incoming sheet under review */
+
+function blankSheet(){ return {}; }
+function blankEdits(){ return { overrides:[], additions:{}, hidden:[] }; }
+function blankPlayer(){
+  return { showZeroAbilities:false, wpTemp:null, health:[0,0,0,0,0,0,0],
+           bloodFelt:"Comfortable", bloodPlayerNote:"", notes:"", inventory:[],
+           materielMarks:{}, log:[], rolls:[] };
+}
+function newSlotObj(kind, name){
+  return { id:"s"+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4),
+           name:name||("New "+(kind||"PC")), kind:kind||"PC",
+           sheet:blankSheet(), edits:blankEdits(), player:blankPlayer() };
+}
+function blankDB(){
+  const s = newSlotObj("PC","New character");
+  return { version:2, active:s.id, slots:[s] };
+}
+
+/* ====================== HELPERS ====================== */
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+  .replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function attr(s){ return esc(s).replace(/'/g,"&#39;"); }
+function isArr(x){ return Object.prototype.toString.call(x)==="[object Array]"; }
+function clone(x){ return JSON.parse(JSON.stringify(x)); }
+function has(v){
+  if(v===null||v===undefined||v==="") return false;
+  if(isArr(v)) return v.length>0;
+  if(typeof v==="object") return Object.keys(v).length>0;
+  return true;
+}
+function nowStamp(){ const d=new Date(); const p=x=>String(x).padStart(2,"0");
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes()); }
+function toast(t){ const el=document.getElementById("toast"); el.textContent=t; el.classList.add("show");
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove("show"), 2600); }
+function msg(id, text, ok){ const el=document.getElementById(id);
+  el.textContent=text; el.className="statusmsg "+(ok?"ok":"err"); }
+function jumpTo(id){ const el=document.getElementById(id);
+  if(el) el.scrollIntoView({behavior:"smooth", block:"start"}); }
+function openModal(id){ document.getElementById(id).classList.add("open"); }
+function closeModal(id){ document.getElementById(id).classList.remove("open"); }
+
+function dots(n, max, ref){
+  max = max || 5; n = Math.max(0, Math.min(Number(n)||0, max));
+  const editable = UNLOCKED && ref;
+  let s = "";
+  for(let i=0;i<max;i++){
+    s += '<span class="'+(i<n?"dot-f":"dot-e")+'"'+(editable?' data-dot="'+(i+1)+'"':'')+'>'+(i<n?"●":"○")+'</span>';
+  }
+  return '<span class="dots'+(editable?" editable":"")+'"'+(editable?' data-dotref="'+attr(ref)+'" data-max="'+max+'"':'')+'>'+s+'</span>';
+}
+
+/* ====================== PERSISTENCE ====================== */
+function save(){
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify(DB));
+    document.getElementById("autosaveNote").textContent =
+      "Saved to this device "+nowStamp()+". Storage is per-device — phone and laptop do not share. Export is the portable record.";
+  }catch(e){
+    document.getElementById("autosaveNote").textContent =
+      "This browser refused to save (private mode or storage full) — EXPORT BEFORE CLOSING.";
+  }
+}
+function load(){
+  let raw=null;
+  try{ raw = localStorage.getItem(LS_KEY); }catch(e){}
+  if(!raw){ DB = blankDB(); return; }
+  try{
+    const d = JSON.parse(raw);
+    if(!d || !isArr(d.slots) || !d.slots.length) throw new Error("shape");
+    d.slots.forEach(function(s){
+      s.sheet  = s.sheet  || blankSheet();
+      s.edits  = Object.assign(blankEdits(), s.edits||{});
+      s.player = Object.assign(blankPlayer(), s.player||{});
+      if(!isArr(s.edits.overrides)) s.edits.overrides = [];
+      if(!isArr(s.edits.hidden)) s.edits.hidden = [];
+      if(!s.edits.additions || isArr(s.edits.additions)) s.edits.additions = {};
+    });
+    if(!d.slots.some(s=>s.id===d.active)) d.active = d.slots[0].id;
+    DB = d;
+  }catch(e){ DB = blankDB(); }
+}
+function activeSlot(){ return DB.slots.filter(s=>s.id===DB.active)[0] || DB.slots[0]; }
+function logChange(entry){ SLOT.player.log.push({t:nowStamp(), e:entry}); renderLog(); save(); }
+
+/* ====================== REF RESOLUTION ======================
+   A ref is a "|"-joined path into the sheet. Array steps match by
+   .n / .id / .label, or "#<index>" when the item has no name.
+   locate() returns {obj, key} or null when the ref no longer exists. */
+function locate(root, ref, createMissing){
+  const parts = String(ref).split("|");
+  let cur = root;
+  for(let i=0;i<parts.length-1;i++){
+    const p = parts[i];
+    cur = step(cur, p, createMissing);
+    if(cur===undefined || cur===null) return null;
+  }
+  const last = parts[parts.length-1];
+  if(isArr(cur)){
+    const idx = arrIndex(cur, last);
+    if(idx<0) return null;
+    return { obj:cur, key:idx };
+  }
+  if(typeof cur!=="object") return null;
+  return { obj:cur, key:last };
+}
+function step(cur, p, createMissing){
+  if(isArr(cur)){
+    const idx = arrIndex(cur, p);
+    return idx<0 ? undefined : cur[idx];
+  }
+  if(cur && typeof cur==="object"){
+    if(!(p in cur) && createMissing) cur[p] = {};
+    return cur[p];
+  }
+  return undefined;
+}
+function arrIndex(arr, token){
+  if(token.charAt(0)==="#"){ const i = parseInt(token.slice(1),10); return (i>=0 && i<arr.length)?i:-1; }
+  for(let i=0;i<arr.length;i++){
+    const it = arr[i];
+    if(it && typeof it==="object" && (it.n===token || it.id===token || it.label===token)) return i;
+    if(typeof it==="string" && sig(it)===token) return i;
+  }
+  return -1;
+}
+/* stable-ish signature for plain string list items (threads, merits) */
+function sig(str){ return "~"+String(str).replace(/\s+/g," ").trim().slice(0,44); }
+
+function refRead(root, ref){ const L = locate(root, ref); return L ? L.obj[L.key] : undefined; }
+function refWrite(root, ref, val){ const L = locate(root, ref, true); if(L){ L.obj[L.key] = val; return true; } return false; }
+
+/* ====================== EDIT LAYER ====================== */
+function findOv(ref){ return SLOT.edits.overrides.filter(o=>o.ref===ref)[0]; }
+function setOverride(ref, val){
+  const base = refRead(SLOT.sheet, ref);
+  if(JSON.stringify(base)===JSON.stringify(val)){
+    SLOT.edits.overrides = SLOT.edits.overrides.filter(o=>o.ref!==ref);
+  } else {
+    const ex = findOv(ref);
+    if(ex){ ex.value = val; }
+    else { SLOT.edits.overrides.push({ ref:ref, base:clone(base===undefined?null:base), value:val }); }
+  }
+  rebuild();
+  save();
+}
+function clearOverride(ref){
+  SLOT.edits.overrides = SLOT.edits.overrides.filter(o=>o.ref!==ref);
+  rebuild(); save();
+}
+function isHidden(ref){ return SLOT.edits.hidden.indexOf(ref)>=0; }
+function toggleHidden(ref){
+  if(isHidden(ref)) SLOT.edits.hidden = SLOT.edits.hidden.filter(h=>h!==ref);
+  else SLOT.edits.hidden.push(ref);
+  rebuild(); save();
+}
+function addTo(bucket, seed){
+  const A = SLOT.edits.additions;
+  if(!isArr(A[bucket])) A[bucket] = [];
+  A[bucket].push(seed !== undefined ? seed : defaultSeed(bucket));
+  if(!UNLOCKED) toggleLock();
+  rebuild(); save();
+}
+function defaultSeed(bucket){
+  if(bucket==="threads" || bucket==="meritsFlaws") return "";
+  if(bucket==="materiel") return { id:"add"+Math.random().toString(36).slice(2,7), n:"", note:"" };
+  if(bucket.indexOf("abilities.")===0 || bucket==="backgrounds" || bucket==="virtues" || bucket==="vinculum")
+    return { n:"", d:0 };
+  if(bucket==="disciplines") return { state:"named", label:"", d:0 };
+  return { n:"", d:0 };
+}
+function delAdd(bucket, i){
+  const A = SLOT.edits.additions;
+  if(isArr(A[bucket])){ A[bucket].splice(i,1); if(!A[bucket].length) delete A[bucket]; }
+  rebuild(); save();
+}
+function editAdd(bucket, i, field, val){
+  const A = SLOT.edits.additions;
+  if(!isArr(A[bucket]) || !(i in A[bucket])) return;
+  if(field===null) A[bucket][i] = val; else A[bucket][i][field] = val;
+  rebuild(); save();
+}
+
+/* Effective sheet: ST sheet + overrides + additions, with hidden rows marked. */
+function computeSheet(){
+  const s = clone(SLOT.sheet || {});
+  SLOT.edits.overrides.forEach(function(o){ refWrite(s, o.ref, o.value); });
+  return s;
+}
+
+/* ====================== SHAPE NORMALIZER ======================
+   Accepts the canonical array form ({"n":"Brawl","d":2}) or the
+   object-map form ({"Brawl":2} / {"Brawl":{"rating":2,...}}). */
+function traitFrom(name, val){
+  if(val && typeof val==="object"){
+    return { n:name, d:(val.rating!==undefined?val.rating:(val.d!==undefined?val.d:0)),
+             spec: val.specialty || val.spec || val.note || undefined };
+  }
+  return { n:name, d:(typeof val==="number"?val:0) };
+}
+function mapToTraits(obj){
+  if(isArr(obj)) return obj;
+  if(!obj || typeof obj!=="object") return [];
+  const out=[]; for(const k in obj){ if(k==="note") continue; out.push(traitFrom(k, obj[k])); }
+  return out;
+}
+function normalizeSheet(raw){
+  const s = clone(raw);
+  if(s.attributes && !isArr(s.attributes)){
+    const vals = s.attributes;
+    const looksFlat = Object.keys(vals).some(k=>!(k in ATTR_GROUPS));
+    if(looksFlat){
+      const g={}; const known=[];
+      for(const grp in ATTR_GROUPS){
+        g[grp] = ATTR_GROUPS[grp].filter(n=>n in vals).map(n=>traitFrom(n, vals[n]));
+        known.push.apply(known, ATTR_GROUPS[grp]);
+      }
+      const stray = Object.keys(vals).filter(k=>known.indexOf(k)<0);
+      if(stray.length) g["Other"] = stray.map(n=>traitFrom(n, vals[n]));
+      s.attributes = g;
+    } else {
+      for(const grp in s.attributes) s.attributes[grp] = mapToTraits(s.attributes[grp]);
+    }
+  }
+  if(s.abilities){
+    const titles = {talents:"Talents", skills:"Skills", knowledges:"Knowledges"};
+    const g={};
+    for(const k in s.abilities){ g[titles[k.toLowerCase()] || k] = mapToTraits(s.abilities[k]); }
+    s.abilities = g;
+  }
+  if(isArr(s.disciplines)){
+    s.disciplines = s.disciplines.map(function(d){
+      const o = { state: d.state || "named", label: d.label || d.name,
+                  d: (d.d!==undefined ? d.d : (d.rating!==undefined ? d.rating : 0)) };
+      if(d.note) o.note = d.note;
+      return o;
+    });
+  }
+  if(s.backgrounds) s.backgrounds = mapToTraits(s.backgrounds);
+  if(s.virtues)     s.virtues     = mapToTraits(s.virtues);
+  if(s.vinculum && !isArr(s.vinculum)){
+    const vnote = s.vinculum.note;
+    s.vinculum = mapToTraits(s.vinculum);
+    if(vnote && !s.vinculumNote) s.vinculumNote = vnote;
+  }
+  if(s.meritsFlaws && !isArr(s.meritsFlaws)){
+    const mf=[];
+    (s.meritsFlaws.merits||[]).forEach(m=>mf.push("Merit — "+m));
+    (s.meritsFlaws.flaws||[]).forEach(f=>mf.push("Flaw — "+f));
+    s.meritsFlaws = mf;
+  }
+  if(s.xp && s.xp.deferred && !s.xp.note){
+    s.xp.note = "Deferred: " + [].concat(s.xp.deferred).join("; ");
+  }
+  if(isArr(s.materiel)){
+    s.materiel = s.materiel.map(function(m,i){
+      if(m.n) return m;
+      return { id: m.id || ("m"+i), n: m.item || m.name || "—", note: m.status || m.note || "" };
+    });
+  }
+  return s;
+}
+
+/* ====================== FIELD RENDERERS ====================== */
+function marks(ref){
+  const ov = findOv(ref);
+  return ov ? ' <span class="edited-mark" title="ST issued: '+attr(JSON.stringify(ov.base))+'">EDITED</span>' : "";
+}
+function cls(ref, extra){
+  return (findOv(ref) ? "edited " : "") + (extra||"");
+}
+/* inline single-line text field */
+function fText(ref, val, placeholder, short){
+  if(!UNLOCKED) return '<span class="'+cls(ref)+'">'+esc(val)+'</span>'+marks(ref);
+  return '<input class="ed'+(short?" short":"")+'" type="text" data-ref="'+attr(ref)+'" value="'+attr(val==null?"":val)+
+         '" placeholder="'+attr(placeholder||"")+'">';
+}
+/* multi-line block */
+function fBlock(ref, val, placeholder){
+  if(!UNLOCKED) return '<div class="'+cls(ref)+'" style="white-space:pre-wrap;">'+esc(val)+'</div>'+
+                       (findOv(ref)?'<div class="edited-mark">EDITED — ST text preserved underneath</div>':"");
+  const rows = Math.max(2, Math.min(10, Math.ceil((String(val||"").length||40)/70)+1));
+  return '<textarea class="ed" rows="'+rows+'" data-ref="'+attr(ref)+'" placeholder="'+attr(placeholder||"")+'">'+
+         esc(val==null?"":val)+'</textarea>';
+}
+function fNum(ref, val, max){
+  if(!UNLOCKED) return '<span class="'+cls(ref)+'">'+esc(val)+'</span>';
+  return '<input class="ed short" type="number" min="0"'+(max?' max="'+max+'"':'')+
+         ' data-ref="'+attr(ref)+'" value="'+attr(val==null?0:val)+'" style="width:5.5em;">';
+}
+function hideBtn(ref){
+  if(!UNLOCKED) return "";
+  return '<span class="rowtools"><button class="quiet tiny" data-hide="'+attr(ref)+'">'+
+         (isHidden(ref)?"restore":"hide")+'</button></span>';
+}
+function revertBtn(ref){
+  if(!UNLOCKED || !findOv(ref)) return "";
+  return '<span class="rowtools"><button class="quiet tiny" data-revert="'+attr(ref)+'">revert</button></span>';
+}
+
+/* ====================== RENDER: SHEET ====================== */
+function traitRow(t, ref, maxDots){
+  const hid = isHidden(ref);
+  const specRef = ref+"|spec";
+  const noteRef = ref+"|note";
+  let name = esc(t.n);
+  let extra = "";
+  if(UNLOCKED){
+    extra = ' <span class="spec">'+fText(specRef, t.spec||"", "specialty", true)+'</span>';
+    if(t.note!==undefined || findOv(noteRef)) extra += ' <span class="spec">'+fText(noteRef, t.note||"", "note", true)+'</span>';
+  } else {
+    if(t.spec) extra += ' <span class="spec '+cls(specRef)+'">('+esc(t.spec)+')</span>';
+    if(t.note) extra += ' <span class="spec '+cls(noteRef)+'">— '+esc(t.note)+'</span>';
+  }
+  return '<div class="trait'+(hid?" hiddenrow":"")+' '+cls(ref+"|d")+'"><span class="tname">'+name+extra+
+         marks(ref+"|d")+revertBtn(ref+"|d")+hideBtn(ref)+'</span>'+dots(t.d, maxDots||5, ref+"|d")+'</div>';
+}
+function addedTraitRow(bucket, i, t, maxDots){
+  const nameCell = UNLOCKED
+    ? '<input class="ed short" type="text" data-add="'+attr(bucket)+'" data-i="'+i+'" data-f="n" value="'+attr(t.n)+'" placeholder="name">'
+    : esc(t.n||"(unnamed)");
+  const del = UNLOCKED ? '<span class="rowtools"><button class="quiet tiny" data-deladd="'+attr(bucket)+'" data-i="'+i+'">×</button></span>' : "";
+  return '<div class="trait added"><span class="tname">'+nameCell+
+         '<span class="added-mark">YOURS</span>'+del+'</span>'+
+         dots(t.d, maxDots||5, "+"+bucket+"|"+i+"|d")+'</div>';
+}
+function renderTraitGroup(groupName, arr, basePath, maxDots){
+  let html = '<div><h3>'+esc(groupName)+'</h3>';
+  (arr||[]).forEach(function(t){
+    const ref = basePath+"|"+(t.n!==undefined?t.n:"#0");
+    if(isHidden(ref) && !UNLOCKED) return;
+    html += traitRow(t, ref, maxDots);
+  });
+  const bucket = basePath.replace(/\|/g,".");
+  (SLOT.edits.additions[bucket]||[]).forEach(function(t,i){ html += addedTraitRow(bucket, i, t, maxDots); });
+  if(UNLOCKED) html += '<div class="addrow"><button class="quiet tiny" data-addto="'+attr(bucket)+'">+ add</button></div>';
+  return html + '</div>';
+}
+
+function mergeRoster(groups){
+  if(!SLOT.player.showZeroAbilities) return groups||{};
+  const out = {};
+  for(const g in V20_ROSTER){
+    const rated = (groups && groups[g]) ? groups[g].slice() : [];
+    const have = rated.map(t=>t.n);
+    V20_ROSTER[g].forEach(function(n){ if(have.indexOf(n)<0) rated.push({n:n, d:0}); });
+    rated.sort(function(a,b){ return a.n.localeCompare(b.n); });
+    out[g] = rated;
+  }
+  for(const g in (groups||{})){ if(!(g in out)) out[g] = groups[g]; }
+  return out;
+}
+function zeroTog(){
+  SLOT.player.showZeroAbilities = document.getElementById("zeroTog").checked;
+  save(); rebuild();
+}
+
+function renderIdentity(){
+  const id = SHEET.identity || {};
+  document.getElementById("charname").textContent = id.name || SLOT.name || "Vampire: The Masquerade";
+  const asOf = SHEET.asOf ? ("STATE AS OF: "+SHEET.asOf) : "";
+  document.getElementById("issueline").innerHTML = UNLOCKED
+    ? '<div style="text-align:left;">STATE AS OF: '+fText("asOf", SHEET.asOf||"", "as-of line")+'</div>'
+    : esc(asOf);
+
+  function reveal(field, ref, shortBar){
+    if(UNLOCKED){
+      const st = (field && typeof field==="object" && field.state) ? field.state : (field?"named":"redacted");
+      const lab = (field && typeof field==="object") ? (field.label||"") : (field||"");
+      return '<select data-ref="'+attr(ref+"|state")+'" style="font-size:12px;">' +
+             ["named","working","redacted"].map(o=>'<option value="'+o+'"'+(o===st?" selected":"")+'>'+o+'</option>').join("") +
+             '</select> ' + fText(ref+"|label", lab, "label", true);
+    }
+    if(!field) return '<span class="redactbar'+(shortBar?" short":"")+'">█</span>';
+    if(typeof field === "string") return esc(field);
+    if(field.state === "redacted") return '<span class="redactbar'+(shortBar?" short":"")+'">█</span>';
+    if(field.state === "working") return '<span class="workinglabel">'+esc(field.label||"—")+'</span>';
+    return esc(field.label || "—");
+  }
+  const simple = [["Name","name"],["Nature","nature"],["Demeanor","demeanor"],["Concept","concept"],
+                  ["Sire","sire"],["Chronicle","chronicle"]];
+  let rows = [];
+  simple.forEach(function(p){
+    const ref = "identity|"+p[1];
+    if(!UNLOCKED && !has(id[p[1]])) return;
+    rows.push([p[0], fText(ref, id[p[1]]||"", p[0].toLowerCase())]);
+  });
+  if(UNLOCKED || has(id.clan))       rows.splice(4,0,["Clan", reveal(id.clan, "identity|clan", true)]);
+  if(UNLOCKED || has(id.generation)) rows.splice(5,0,["Generation", reveal(id.generation, "identity|generation", true)]);
+  document.getElementById("identityrow").innerHTML =
+    rows.map(r=>'<div class="idfield"><b>'+r[0]+'</b>'+r[1]+'</div>').join("");
+}
+
+function renderDisciplines(){
+  const arr = SHEET.disciplines || [];
+  let html = arr.map(function(d, i){
+    const key = d.label ? d.label : ("#"+i);
+    const ref = "disciplines|"+key;
+    if(isHidden(ref) && !UNLOCKED) return "";
+    let label;
+    if(UNLOCKED){
+      label = '<select data-ref="'+attr(ref+"|state")+'" style="font-size:12px;">' +
+              ["named","working","redacted"].map(o=>'<option value="'+o+'"'+(o===(d.state||"named")?" selected":"")+'>'+o+'</option>').join("") +
+              '</select> ' + fText(ref+"|label", d.label||"", "name", true) +
+              ' ' + fText(ref+"|note", d.note||"", "note", true);
+    } else if(d.state === "redacted"){ label = '<span class="redactbar">████</span>'; }
+    else if(d.state === "working"){ label = '<span class="workinglabel">'+esc(d.label||"(working)")+'</span>'; }
+    else { label = esc(d.label||"—") + (d.note?' <span class="spec">('+esc(d.note)+')</span>':""); }
+    return '<div class="trait'+(isHidden(ref)?" hiddenrow":"")+'"><span class="tname">'+label+
+           marks(ref+"|d")+hideBtn(ref)+'</span>'+dots(d.d, 5, ref+"|d")+'</div>';
+  }).join("");
+  (SLOT.edits.additions["disciplines"]||[]).forEach(function(d,i){
+    const nameCell = UNLOCKED
+      ? '<input class="ed short" type="text" data-add="disciplines" data-i="'+i+'" data-f="label" value="'+attr(d.label)+'" placeholder="name">'
+      : esc(d.label||"(unnamed)");
+    const del = UNLOCKED ? '<span class="rowtools"><button class="quiet tiny" data-deladd="disciplines" data-i="'+i+'">×</button></span>' : "";
+    html += '<div class="trait added"><span class="tname">'+nameCell+'<span class="added-mark">YOURS</span>'+del+
+            '</span>'+dots(d.d,5,"+disciplines|"+i+"|d")+'</div>';
+  });
+  if(UNLOCKED) html += '<div class="addrow"><button class="quiet tiny" data-addto="disciplines">+ add</button></div>';
+  if(has(SHEET.disciplineNote) || UNLOCKED)
+    html += '<div class="hint">'+(UNLOCKED?fBlock("disciplineNote", SHEET.disciplineNote||"", "discipline note")
+                                          :esc(SHEET.disciplineNote))+'</div>';
+  document.getElementById("disciplines").innerHTML = html;
+  document.getElementById("col-disc").style.display = (html.trim() && (arr.length || UNLOCKED || (SLOT.edits.additions["disciplines"]||[]).length)) ? "" : "none";
+}
+
+function renderStringList(elId, key, arr, ordered){
+  const items = [];
+  (arr||[]).forEach(function(t){
+    const ref = key+"|"+sig(t);
+    if(isHidden(ref) && !UNLOCKED) return;
+    const body = UNLOCKED ? fBlock(ref, t, "") : '<span class="'+cls(ref)+'">'+esc(t)+'</span>'+marks(ref);
+    items.push('<li class="'+(isHidden(ref)?"hiddenrow":"")+'">'+body+revertBtn(ref)+hideBtn(ref)+'</li>');
+  });
+  (SLOT.edits.additions[key]||[]).forEach(function(t,i){
+    const body = UNLOCKED
+      ? '<textarea class="ed" rows="2" data-add="'+key+'" data-i="'+i+'" data-f="__self" placeholder="your line">'+esc(t)+'</textarea>'
+      : esc(t);
+    const del = UNLOCKED ? '<span class="rowtools"><button class="quiet tiny" data-deladd="'+key+'" data-i="'+i+'">×</button></span>' : "";
+    items.push('<li class="added">'+body+'<span class="added-mark">YOURS</span>'+del+'</li>');
+  });
+  document.getElementById(elId).innerHTML = items.join("");
+  return items.length;
+}
+
+function renderMateriel(){
+  const arr = SHEET.materiel || [];
+  const items = [];
+  arr.forEach(function(m,i){
+    const id = m.id || ("m"+i);
+    const ref = "materiel|"+id;
+    if(isHidden(ref) && !UNLOCKED) return;
+    const st = SLOT.player.materielMarks[id] || "carried";
+    const body = UNLOCKED
+      ? fText(ref+"|n", m.n||"", "item") + ' ' + fText(ref+"|note", m.note||"", "note")
+      : '<b style="font-weight:600;">'+esc(m.n)+'</b>'+(m.note?' <span class="spec">— '+esc(m.note)+'</span>':"");
+    items.push('<li class="'+(isHidden(ref)?"hiddenrow ":"")+cls(ref+"|note")+'" style="display:flex; justify-content:space-between; gap:10px; align-items:baseline; flex-wrap:wrap;">'+
+      '<span style="flex:1 1 60%; min-width:160px;">'+body+marks(ref+"|note")+hideBtn(ref)+'</span>'+
+      '<span class="statuschip '+st+'" data-mat="'+attr(id)+'" data-matname="'+attr(m.n||"item")+'">'+st+'</span></li>');
+  });
+  (SLOT.edits.additions["materiel"]||[]).forEach(function(m,i){
+    const st = SLOT.player.materielMarks[m.id] || "carried";
+    const body = UNLOCKED
+      ? '<input class="ed short" type="text" data-add="materiel" data-i="'+i+'" data-f="n" value="'+attr(m.n)+'" placeholder="item"> '+
+        '<input class="ed short" type="text" data-add="materiel" data-i="'+i+'" data-f="note" value="'+attr(m.note)+'" placeholder="note">'
+      : '<b style="font-weight:600;">'+esc(m.n||"(unnamed)")+'</b>'+(m.note?' <span class="spec">— '+esc(m.note)+'</span>':"");
+    const del = UNLOCKED ? '<span class="rowtools"><button class="quiet tiny" data-deladd="materiel" data-i="'+i+'">×</button></span>' : "";
+    items.push('<li class="added" style="display:flex; justify-content:space-between; gap:10px; align-items:baseline; flex-wrap:wrap;">'+
+      '<span style="flex:1 1 60%; min-width:160px;">'+body+'<span class="added-mark">YOURS</span>'+del+'</span>'+
+      '<span class="statuschip '+st+'" data-mat="'+attr(m.id)+'" data-matname="'+attr(m.n||"item")+'">'+st+'</span></li>');
+  });
+  document.getElementById("materiel").innerHTML = '<ul class="plain">'+items.join("")+'</ul>';
+  return items.length;
+}
+function matClick(id, name){
+  const cur = SLOT.player.materielMarks[id] || "carried";
+  const nxt = MAT_CYCLE[(MAT_CYCLE.indexOf(cur)+1) % MAT_CYCLE.length];
+  SLOT.player.materielMarks[id] = nxt;
+  logChange("Materiel — "+name+": "+cur+" → "+nxt);
+  renderMateriel();
+}
+
+function renderXP(){
+  const xp = SHEET.xp || {};
+  let html;
+  if(UNLOCKED){
+    html = '<div style="font-family:\'Courier Prime\',monospace; font-size:13px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">'+
+      'earned '+fNum("xp|earned", xp.earned||0)+' spent '+fNum("xp|spent", xp.spent||0)+' banked '+fNum("xp|banked", xp.banked||0)+'</div>'+
+      '<div style="margin-top:6px;">'+fBlock("xp|note", xp.note||"", "xp note")+'</div>';
+  } else {
+    html = '<div style="font-family:\'Courier Prime\',monospace; font-size:14px;"><b>'+(xp.earned||0)+
+      '</b> earned · <b>'+(xp.spent||0)+'</b> spent · <b>'+(xp.banked||0)+'</b> banked</div>' +
+      (has(xp.note)?'<div class="hint '+cls("xp|note")+'">'+esc(xp.note)+'</div>':"");
+  }
+  document.getElementById("xp").innerHTML = html +
+    '<div class="hint">XP purchases run through the table and land at the write.</div>';
+}
+
+function renderAdditional(){
+  const el = document.getElementById("additional");
+  const extra = Object.keys(SHEET).filter(k=>KNOWN_KEYS.indexOf(k)<0);
+  if(!extra.length){ el.innerHTML=""; return; }
+  el.innerHTML = '<h2>Additional (new fields)</h2>' + extra.map(function(k){
+    const v = SHEET[k];
+    const body = (typeof v === "string") ? esc(v) : "<pre>"+esc(JSON.stringify(v,null,2))+"</pre>";
+    return '<div class="band"><span class="bandtitle">'+esc(k.toUpperCase())+'</span>'+body+'</div>'; }).join("");
+}
+
+function show(id, on){ const el=document.getElementById(id); if(el) el.style.display = on ? "" : "none"; }
+
+function renderSheet(){
+  const empty = !has(SHEET);
+  show("emptyState", empty);
+  document.getElementById("sheetBody").style.display = empty && !UNLOCKED ? "none" : "";
+  if(empty && !UNLOCKED) return;
+
+  renderIdentity();
+
+  /* Attributes */
+  const attrs = SHEET.attributes || {};
+  const attrHtml = Object.keys(attrs).map(g=>renderTraitGroup(g, attrs[g], "attributes|"+g, 5)).join("");
+  document.getElementById("attributes").innerHTML = attrHtml;
+  show("sec-attributes", !!attrHtml || UNLOCKED);
+
+  /* Abilities */
+  const abil = mergeRoster(SHEET.abilities || {});
+  const abilHtml = Object.keys(abil).map(g=>renderTraitGroup(g, abil[g], "abilities|"+g, 5)).join("");
+  document.getElementById("abilities").innerHTML = abilHtml;
+  show("sec-abilities", !!abilHtml || UNLOCKED);
+  document.getElementById("zeroTog").checked = !!SLOT.player.showZeroAbilities;
+
+  /* Advantages */
+  renderDisciplines();
+  const bg = SHEET.backgrounds||[], vt = SHEET.virtues||[];
+  document.getElementById("backgrounds").innerHTML = renderTraitGroup("", bg, "backgrounds", 5).replace("<div><h3></h3>","<div>");
+  document.getElementById("virtues").innerHTML     = renderTraitGroup("", vt, "virtues", 5).replace("<div><h3></h3>","<div>");
+  show("col-bg", bg.length || UNLOCKED || (SLOT.edits.additions["backgrounds"]||[]).length);
+  show("col-virt", vt.length || UNLOCKED || (SLOT.edits.additions["virtues"]||[]).length);
+  show("sec-advantages", bg.length || vt.length || (SHEET.disciplines||[]).length || UNLOCKED);
+
+  /* Condition */
+  const humOn = has(SHEET.humanity) || UNLOCKED;
+  show("band-hum", humOn);
+  if(humOn) document.getElementById("humanity").innerHTML =
+    dots(SHEET.humanity||0, 10, "humanity") + (UNLOCKED?' '+fNum("humanity", SHEET.humanity||0, 10):"");
+  renderWillpower(); renderBlood(); renderHealth();
+  show("band-wp", has(SHEET.willpowerPerm) || UNLOCKED);
+
+  /* Merits & Flaws / XP */
+  const mfCount = renderStringList("meritsflaws","meritsFlaws", SHEET.meritsFlaws);
+  show("band-mf", mfCount || UNLOCKED);
+  renderXP();
+  show("band-xp", has(SHEET.xp) || UNLOCKED);
+  show("sec-mfxp", mfCount || has(SHEET.xp) || UNLOCKED);
+
+  /* Vinculum + bond/anchor */
+  const vinc = SHEET.vinculum||[];
+  let vHtml = renderTraitGroup("", vinc, "vinculum", 10).replace("<div><h3></h3>","<div>");
+  if(has(SHEET.vinculumNote) || UNLOCKED)
+    vHtml += '<div class="hint">'+(UNLOCKED?fBlock("vinculumNote", SHEET.vinculumNote||"", "vinculum note"):esc(SHEET.vinculumNote))+'</div>';
+  document.getElementById("vinculum").innerHTML = vHtml;
+  show("band-vinc", vinc.length || has(SHEET.vinculumNote) || UNLOCKED);
+
+  const bondOn = has(SHEET.bond) || has(SHEET.anchor) || UNLOCKED;
+  if(bondOn) document.getElementById("bondanchor").innerHTML =
+    '<div style="font-size:14px; margin-bottom:8px;">'+fBlock("bond", SHEET.bond||"", "bond")+'</div>'+
+    '<div style="font-size:14px;">'+fBlock("anchor", SHEET.anchor||"", "anchor")+'</div>';
+  show("band-bond", bondOn);
+  show("sec-chronicle", vinc.length || has(SHEET.bond) || has(SHEET.anchor) || has(SHEET.vinculumNote) || UNLOCKED);
+
+  /* Materiel */
+  const matCount = renderMateriel();
+  show("band-mat", matCount || UNLOCKED);
+
+  /* Threads + scene */
+  const thCount = renderStringList("threads","threads", SHEET.threads, true);
+  const sceneOn = has(SHEET.scene) || UNLOCKED;
+  if(sceneOn) document.getElementById("scene").innerHTML = fBlock("scene", SHEET.scene||"", "scene at pause");
+  show("band-scene", sceneOn);
+  show("sec-threads", thCount || sceneOn || UNLOCKED);
+
+  /* Sheet notes */
+  const snOn = has(SHEET.sheetNotes) || UNLOCKED;
+  if(snOn) document.getElementById("sheetnotes").innerHTML = fBlock("sheetNotes", SHEET.sheetNotes||"", "ST sheet notes");
+  show("band-sheetnotes", snOn);
+
+  renderAdditional();
+}
+
+/* ====================== TRACKERS ====================== */
+function renderWillpower(){
+  const perm = Number(SHEET.willpowerPerm)||0;
+  const P = SLOT.player;
+  if(P.wpTemp===null || P.wpTemp>perm) P.wpTemp = perm;
+  let html = '<div>'+dots(perm,10,"willpowerPerm")+' <span class="spec">permanent</span>'+
+             (UNLOCKED?' '+fNum("willpowerPerm", perm, 10):"")+'</div><div class="boxes">';
+  for(let i=1;i<=perm;i++){
+    html += '<span class="wpbox'+(i<=P.wpTemp?"":" spent")+'" data-wp="'+i+'">'+(i<=P.wpTemp?"":"✕")+'</span>';
+  }
+  html += '</div><div class="hint">Temporary: '+P.wpTemp+' / '+perm+'</div>';
+  document.getElementById("willpower").innerHTML = html;
+}
+function wpClick(i){
+  const P = SLOT.player, before = P.wpTemp;
+  P.wpTemp = (i===P.wpTemp) ? i-1 : i;
+  if(P.wpTemp!==before) logChange("WP temp "+before+" → "+P.wpTemp);
+  renderWillpower();
+}
+function renderBlood(){
+  const P = SLOT.player;
+  let html = '<select id="bloodSel">' + BLOOD_STATES.map(function(b){
+    return '<option'+(b===P.bloodFelt?" selected":"")+'>'+esc(b)+'</option>'; }).join("") + '</select>';
+  if(has(SHEET.bloodNote) || UNLOCKED)
+    html += '<div class="hint" style="margin-top:6px;">'+(UNLOCKED?fBlock("bloodNote", SHEET.bloodNote||"", "ST blood note"):esc(SHEET.bloodNote))+'</div>';
+  html += '<input type="text" id="bloodPN" placeholder="your note (e.g. fed at the lots)" style="width:100%; margin-top:6px;" value="'+
+          attr(P.bloodPlayerNote||"")+'">';
+  document.getElementById("blood").innerHTML = html;
+  document.getElementById("bloodSel").addEventListener("change", function(){
+    const v=this.value; if(v!==P.bloodFelt){ const was=P.bloodFelt; P.bloodFelt=v; logChange("Blood felt: "+was+" → "+v); } });
+  document.getElementById("bloodPN").addEventListener("blur", function(){
+    const v=this.value; if(v!==P.bloodPlayerNote){ P.bloodPlayerNote=v; logChange("Blood note: "+(v||"(cleared)")); } });
+}
+function renderHealth(){
+  const marksArr=["","╱","✕","✱"];
+  let html = "";
+  HEALTH_LEVELS.forEach(function(lv,idx){
+    const st = SLOT.player.health[idx]||0;
+    html += '<div class="healthrow"><span class="hlabel">'+lv[0]+'</span><span class="hpen">'+lv[1]+'</span>'+
+      '<span class="hbox" data-health="'+idx+'">'+marksArr[st]+'</span></div>';
+  });
+  document.getElementById("health").innerHTML = html;
+}
+function healthClick(idx){
+  const names=["clear","bashing","lethal","aggravated"];
+  const P = SLOT.player;
+  P.health[idx] = ((P.health[idx]||0)+1)%4;
+  logChange("Health — "+HEALTH_LEVELS[idx][0]+": "+names[P.health[idx]]);
+  renderHealth();
+}
+
+/* ====================== DICE ====================== */
+function bumpDice(n){
+  DICE_N = Math.max(1, Math.min(40, DICE_N + n));
+  document.getElementById("diceCount").textContent = DICE_N;
+}
+function setDice(n){ DICE_N = n; document.getElementById("diceCount").textContent = DICE_N; }
+function renderQuickPool(){
+  let h = "";
+  for(let i=1;i<=12;i++) h += '<button class="quiet" data-pool="'+i+'">'+i+'</button>';
+  document.getElementById("quickPool").innerHTML = h;
+}
+function d10(){
+  if(window.crypto && window.crypto.getRandomValues){
+    const a = new Uint32Array(1);
+    /* rejection sampling keeps the distribution flat */
+    const limit = 4294967296 - (4294967296 % 10);
+    do { window.crypto.getRandomValues(a); } while(a[0] >= limit);
+    return (a[0] % 10) + 1;
+  }
+  return Math.floor(Math.random()*10)+1;
+}
+function rollDice(){
+  const n = DICE_N;
+  const faces = [];
+  for(let i=0;i<n;i++) faces.push(d10());
+  const label = document.getElementById("rollLabel").value.trim();
+  const sorted = faces.slice().sort((a,b)=>b-a);
+  document.getElementById("diceOut").innerHTML =
+    '<div>'+faces.map(f=>'<span class="diceface'+(f===10?" ten":(f===1?" one":""))+'">'+f+'</span>').join("")+'</div>'+
+    '<div class="hint">'+n+'d10'+(label?" — "+esc(label):"")+" · sorted: "+sorted.join(", ")+'</div>';
+  SLOT.player.rolls.unshift({ t:nowStamp(), n:n, label:label, faces:faces });
+  SLOT.player.rolls = SLOT.player.rolls.slice(0,40);
+  renderRolls();
+  logChange("Roll "+n+"d10"+(label?" ("+label+")":"")+": "+faces.join(" "));
+}
+function renderRolls(){
+  document.getElementById("rollHist").innerHTML = (SLOT.player.rolls||[]).map(function(r){
+    return '<div>'+esc(r.t)+" · "+r.n+"d10"+(r.label?" · "+esc(r.label):"")+" — "+esc(r.faces.join(" "))+'</div>';
+  }).join("") || '<div style="opacity:.6;">No rolls yet.</div>';
+}
+function clearRolls(){ SLOT.player.rolls = []; renderRolls(); save(); }
+
+/* ====================== PLAYER LAYER ====================== */
+function renderNotes(){ document.getElementById("notes").value = SLOT.player.notes||""; }
+function renderInventory(){
+  const tb = document.querySelector("#invtable tbody");
+  tb.innerHTML = (SLOT.player.inventory||[]).map(function(it,i){
+    return '<tr><td><input type="text" value="'+attr(it.n||"")+'" data-inv="'+i+'" data-f="n"></td>'+
+      '<td><input type="text" value="'+attr(it.note||"")+'" data-inv="'+i+'" data-f="note"></td>'+
+      '<td><span class="statuschip '+(it.status||"carried")+'" data-invstatus="'+i+'">'+(it.status||"carried")+'</span></td>'+
+      '<td><button class="quiet tiny" data-invdel="'+i+'">×</button></td></tr>';
+  }).join("");
+}
+function addInvRow(){ SLOT.player.inventory.push({n:"",note:"",status:"carried"}); renderInventory(); save(); }
+function renderLog(){
+  const el=document.getElementById("changelog");
+  el.innerHTML = (SLOT.player.log||[]).slice().reverse().map(function(l){
+    return "<div>"+esc(l.t)+" · "+esc(l.e)+"</div>"; }).join("") || '<div style="opacity:.6;">No entries yet.</div>';
+}
+function manualLog(){ const el=document.getElementById("manualLogEntry");
+  if(el.value.trim()){ logChange(el.value.trim()); el.value=""; } }
+function clearLog(){
+  if(confirm("Clear the change log for this character? Export first if you want it for the session write."))
+    { SLOT.player.log = []; renderLog(); save(); }
+}
+
+/* ====================== SLOTS ====================== */
+function renderSlotSel(){
+  document.getElementById("slotSel").innerHTML = DB.slots.map(function(s){
+    return '<option value="'+attr(s.id)+'"'+(s.id===DB.active?" selected":"")+'>'+esc(s.name)+'</option>'; }).join("");
+  document.getElementById("kindTag").textContent = SLOT.kind || "PC";
+}
+function switchSlot(id){
+  if(!DB.slots.some(s=>s.id===id)) return;
+  DB.active = id; save(); boot(false);
+  toast("Switched to "+activeSlot().name);
+}
+function newSlot(kind){
+  const name = prompt(kind==="NPC" ? "Name for the new NPC slot:" : "Name for the new character slot:", "");
+  if(name===null) return;
+  const s = newSlotObj(kind, name.trim() || ("New "+kind));
+  DB.slots.push(s); DB.active = s.id; save();
+  closeModal("slotModal"); boot(false); jumpTo("ioSection");
+  toast("Created "+s.name+" — paste its data below.");
+}
+function openSlotMenu(){
+  document.getElementById("slotList").innerHTML = DB.slots.map(function(s,i){
+    const sub = has(s.sheet) ? ((s.sheet.asOf||"data loaded")) : "empty — no data pasted yet";
+    return '<div class="difgroup"><div class="difhead">'+
+      '<span><span class="kindtag">'+esc(s.kind||"PC")+'</span> <b>'+esc(s.name)+'</b>'+(s.id===DB.active?' <span class="added-mark">ACTIVE</span>':'')+'</span>'+
+      '<span class="difchoice">'+
+        '<button data-slotopen="'+attr(s.id)+'">open</button>'+
+        '<button data-slotrename="'+attr(s.id)+'">rename</button>'+
+        '<button data-slotkind="'+attr(s.id)+'">PC/NPC</button>'+
+        '<button data-slotdup="'+attr(s.id)+'">duplicate</button>'+
+        '<button data-slotdel="'+attr(s.id)+'">delete</button>'+
+      '</span></div><div class="hint">'+esc(sub)+'</div></div>';
+  }).join("");
+  openModal("slotModal");
+}
+
+/* ====================== IMPORT REVIEW ====================== */
+function traitList(arr){ const m={}; (arr||[]).forEach(t=>{ if(t&&t.n!==undefined) m[t.n]=t; }); return m; }
+
+function diffTraits(oldArr, newArr, label){
+  const a = traitList(oldArr), b = traitList(newArr), out=[];
+  Object.keys(b).forEach(function(n){
+    if(!(n in a)){ if((b[n].d||0)>0 || b[n].spec) out.push({c:"add", t:n+" "+(b[n].d||0)+(b[n].spec?" ("+b[n].spec+")":"")}); }
+    else {
+      if((a[n].d||0)!==(b[n].d||0)) out.push({c:"chg", t:n+" "+(a[n].d||0)+" → "+(b[n].d||0)});
+      if((a[n].spec||"")!==(b[n].spec||"")) out.push({c:"chg", t:n+" specialty: "+(a[n].spec||"none")+" → "+(b[n].spec||"none")});
+      if((a[n].note||"")!==(b[n].note||"")) out.push({c:"chg", t:n+" note changed"});
+    }
+  });
+  Object.keys(a).forEach(function(n){ if(!(n in b)) out.push({c:"rem", t:n+" removed"}); });
+  return out;
+}
+function diffStrings(oldArr, newArr){
+  const a = oldArr||[], b = newArr||[], out=[];
+  b.forEach(function(t){ if(a.indexOf(t)<0) out.push({c:"add", t:String(t).slice(0,110)}); });
+  a.forEach(function(t){ if(b.indexOf(t)<0) out.push({c:"rem", t:String(t).slice(0,110)}); });
+  return out;
+}
+function diffText(oldV, newV, name){
+  if((oldV||"")===(newV||"")) return [];
+  if(!has(oldV)) return [{c:"add", t:name+" set"}];
+  if(!has(newV)) return [{c:"rem", t:name+" cleared"}];
+  return [{c:"chg", t:name+" rewritten"}];
+}
+
+function buildDiff(oldS, newS){
+  const G = [];
+  function grp(key, title, changes, keys){
+    G.push({ key:key, title:title, changes:changes, keys:keys, choice: changes.length?"new":"new" });
+  }
+  /* identity */
+  let idc = [];
+  ["name","nature","demeanor","concept","sire","chronicle"].forEach(function(f){
+    const a=(oldS.identity||{})[f], b=(newS.identity||{})[f];
+    if((a||"")!==(b||"")) idc.push({c:"chg", t:f+": "+(a||"—")+" → "+(b||"—")});
+  });
+  ["clan","generation"].forEach(function(f){
+    const a=(oldS.identity||{})[f]||{}, b=(newS.identity||{})[f]||{};
+    const as = typeof a==="string"?a:(a.state==="redacted"?"[redacted]":(a.label||"—"));
+    const bs = typeof b==="string"?b:(b.state==="redacted"?"[redacted]":(b.label||"—"));
+    if(as!==bs) idc.push({c:"chg", t:f+": "+as+" → "+bs});
+  });
+  const asOfChg = (oldS.asOf||"")!==(newS.asOf||"");
+  if(asOfChg) idc.unshift({c:"chg", t:"as-of: "+(newS.asOf||"—")});
+  grp("identity","IDENTITY", idc, ["identity","asOf","schema","issuedBy"]);
+
+  /* attributes */
+  let ac = [];
+  const ag = Object.keys(Object.assign({}, oldS.attributes||{}, newS.attributes||{}));
+  ag.forEach(g=>{ ac = ac.concat(diffTraits((oldS.attributes||{})[g], (newS.attributes||{})[g], g)); });
+  grp("attributes","ATTRIBUTES", ac, ["attributes"]);
+
+  /* abilities */
+  let bc = [];
+  const bg = Object.keys(Object.assign({}, oldS.abilities||{}, newS.abilities||{}));
+  bg.forEach(g=>{ bc = bc.concat(diffTraits((oldS.abilities||{})[g], (newS.abilities||{})[g], g)); });
+  grp("abilities","ABILITIES", bc, ["abilities"]);
+
+  /* disciplines */
+  let dc = [];
+  const od = oldS.disciplines||[], nd = newS.disciplines||[];
+  const maxd = Math.max(od.length, nd.length);
+  for(let i=0;i<maxd;i++){
+    const a=od[i], b=nd[i];
+    const as = a ? (a.state==="redacted" ? "[redacted "+(a.d||0)+"]" : (a.label||"?")+" "+(a.d||0)) : "—";
+    const bs = b ? (b.state==="redacted" ? "[redacted "+(b.d||0)+"]" : (b.label||"?")+" "+(b.d||0)) : "—";
+    if(as!==bs) dc.push({c:"chg", t:"line "+(i+1)+": "+as+" → "+bs});
+    else if(a&&b&&(a.note||"")!==(b.note||"")) dc.push({c:"chg", t:"line "+(i+1)+" note changed"});
+  }
+  dc = dc.concat(diffText(oldS.disciplineNote, newS.disciplineNote, "discipline note"));
+  grp("disciplines","DISCIPLINES", dc, ["disciplines","disciplineNote"]);
+
+  /* backgrounds + virtues */
+  grp("bgvirt","BACKGROUNDS &amp; VIRTUES",
+      diffTraits(oldS.backgrounds,newS.backgrounds).concat(diffTraits(oldS.virtues,newS.virtues)),
+      ["backgrounds","virtues"]);
+
+  /* condition */
+  let cc = [];
+  if((oldS.humanity||0)!==(newS.humanity||0)) cc.push({c:"chg", t:"Humanity "+(oldS.humanity||0)+" → "+(newS.humanity||0)});
+  if((oldS.willpowerPerm||0)!==(newS.willpowerPerm||0)) cc.push({c:"chg", t:"Willpower (perm) "+(oldS.willpowerPerm||0)+" → "+(newS.willpowerPerm||0)});
+  cc = cc.concat(diffText(oldS.bloodNote, newS.bloodNote, "blood note"));
+  grp("condition","CONDITION", cc, ["humanity","willpowerPerm","bloodNote"]);
+
+  grp("meritsFlaws","MERITS &amp; FLAWS", diffStrings(oldS.meritsFlaws, newS.meritsFlaws), ["meritsFlaws"]);
+
+  /* xp */
+  let xc = [];
+  const ox = oldS.xp||{}, nx = newS.xp||{};
+  ["earned","spent","banked"].forEach(function(f){
+    if((ox[f]||0)!==(nx[f]||0)) xc.push({c:"chg", t:f+" "+(ox[f]||0)+" → "+(nx[f]||0)}); });
+  xc = xc.concat(diffText(ox.note, nx.note, "xp note"));
+  grp("xp","EXPERIENCE", xc, ["xp"]);
+
+  /* vinculum + bond + anchor */
+  let vc = diffTraits(oldS.vinculum, newS.vinculum);
+  vc = vc.concat(diffText(oldS.vinculumNote, newS.vinculumNote, "vinculum note"));
+  vc = vc.concat(diffText(oldS.bond, newS.bond, "bond"));
+  vc = vc.concat(diffText(oldS.anchor, newS.anchor, "anchor"));
+  grp("chronicle","VINCULUM, BOND &amp; ANCHOR", vc, ["vinculum","vinculumNote","bond","anchor"]);
+
+  /* materiel */
+  const om = {}, nm = {};
+  (oldS.materiel||[]).forEach((m,i)=>{ om[m.id||("m"+i)] = m; });
+  (newS.materiel||[]).forEach((m,i)=>{ nm[m.id||("m"+i)] = m; });
+  let mc = [];
+  Object.keys(nm).forEach(function(k){
+    if(!(k in om)) mc.push({c:"add", t:nm[k].n});
+    else if((om[k].note||"")!==(nm[k].note||"") || (om[k].n||"")!==(nm[k].n||"")) mc.push({c:"chg", t:nm[k].n+" — changed"});
+  });
+  Object.keys(om).forEach(function(k){ if(!(k in nm)) mc.push({c:"rem", t:om[k].n}); });
+  grp("materiel","MATERIEL", mc, ["materiel"]);
+
+  grp("threads","THREADS", diffStrings(oldS.threads, newS.threads), ["threads"]);
+  grp("scene","SCENE", diffText(oldS.scene, newS.scene, "scene"), ["scene"]);
+  grp("sheetNotes","SHEET NOTES", diffText(oldS.sheetNotes, newS.sheetNotes, "sheet notes"), ["sheetNotes"]);
+
+  /* anything unrecognised rides along with its own group */
+  const extraKeys = Object.keys(newS).filter(k=>KNOWN_KEYS.indexOf(k)<0);
+  if(extraKeys.length){
+    grp("extra","NEW / UNRECOGNISED FIELDS",
+        extraKeys.map(k=>({c:(k in oldS)?"chg":"add", t:k})), extraKeys);
+  }
+  return G;
+}
+
+/* which of your edits collide with what the ST just changed */
+function conflictsFor(group, newS){
+  const out = [];
+  SLOT.edits.overrides.forEach(function(o){
+    const top = o.ref.split("|")[0];
+    if(group.keys.indexOf(top) < 0) return;
+    const nowVal = refRead(newS, o.ref);
+    if(nowVal === undefined){ out.push({ref:o.ref, why:"gone from the new sheet — your edit will be dropped"}); }
+    else if(JSON.stringify(nowVal) !== JSON.stringify(o.base)){
+      out.push({ref:o.ref, why:"ST changed this too (now "+String(JSON.stringify(nowVal)).slice(0,48)+"); your value "+String(JSON.stringify(o.value)).slice(0,48)+" would sit on top"});
+    }
+  });
+  return out;
+}
+
+function loadSheet(){
+  const raw = document.getElementById("sheetIO").value.trim();
+  if(!raw){ msg("sheetMsg","Nothing in the box to load.", false); return; }
+  let obj;
+  try{ obj = JSON.parse(raw); }
+  catch(e){ msg("sheetMsg","That isn’t valid JSON — "+e.message, false); return; }
+  if(!obj || typeof obj!=="object" || isArr(obj)){ msg("sheetMsg","That block isn’t a data object.", false); return; }
+  let norm;
+  try{ norm = normalizeSheet(obj); }
+  catch(e){ msg("sheetMsg","Couldn’t read that shape: "+e.message, false); return; }
+
+  const oldS = SLOT.sheet || {};
+  if(!has(oldS)){
+    SLOT.sheet = norm; rebuild(); save();
+    msg("sheetMsg","Loaded ("+(norm.asOf||"no as-of line")+"). This slot was empty, so there was nothing to review.", true);
+    logChange("Sheet data loaded: "+(norm.asOf||"no as-of line"));
+    toast("Sheet loaded."); jumpTo("charname");
+    return;
+  }
+  PENDING = { sheet: norm, groups: buildDiff(oldS, norm) };
+  renderReview();
+  openModal("reviewModal");
+}
+function renderReview(){
+  const n = PENDING.sheet;
+  document.getElementById("reviewMeta").innerHTML =
+    "INCOMING: "+esc(n.asOf || "no as-of line")+"<br>CURRENT: "+esc((SLOT.sheet||{}).asOf || "no as-of line")+
+    "<br>Choose per section. Your player layer — health, willpower, inventory, notes, log, rolls — is untouched either way.";
+  document.getElementById("reviewBody").innerHTML = PENDING.groups.map(function(g, gi){
+    const conf = conflictsFor(g, n);
+    const changed = g.changes.length>0;
+    return '<div class="difgroup">'+
+      '<div class="difhead"><span class="diftitle">'+g.title+'</span>'+
+      '<span class="difchoice">'+
+        '<button data-choice="new" data-g="'+gi+'" class="'+(g.choice==="new"?"sel":"")+'">take ST</button>'+
+        '<button data-choice="mine" data-g="'+gi+'" class="'+(g.choice==="mine"?"sel":"")+'">keep mine</button>'+
+      '</span></div>'+
+      (changed
+        ? '<ul class="diflist">'+g.changes.slice(0,40).map(c=>'<li class="'+c.c+'">'+esc(c.t)+'</li>').join("")+
+          (g.changes.length>40?'<li class="hint">… and '+(g.changes.length-40)+' more</li>':"")+'</ul>'
+        : '<div class="hint">No change.</div>')+
+      (conf.length ? conf.map(c=>'<div class="conflict">your edit at <b>'+esc(c.ref)+'</b> — '+esc(c.why)+'</div>').join("") : "")+
+    '</div>';
+  }).join("");
+}
+function reviewAll(choice){
+  PENDING.groups.forEach(g=>{ g.choice = choice; });
+  renderReview();
+}
+function commitReview(){
+  const oldS = clone(SLOT.sheet||{});
+  const newS = PENDING.sheet;
+  const merged = clone(newS);
+  const kept = [];
+  PENDING.groups.forEach(function(g){
+    if(g.choice==="mine"){
+      g.keys.forEach(function(k){
+        if(k in oldS) merged[k] = clone(oldS[k]); else delete merged[k];
+      });
+      if(g.changes.length) kept.push(g.title.replace(/&amp;/g,"&"));
+    }
+  });
+  SLOT.sheet = merged;
+
+  /* a full pool stays full when the ST raises permanent Willpower */
+  const oldPerm = Number(oldS.willpowerPerm)||0, newPerm = Number(merged.willpowerPerm)||0;
+  if(newPerm > oldPerm && SLOT.player.wpTemp === oldPerm) SLOT.player.wpTemp = newPerm;
+
+  /* re-anchor your edits against the sheet that actually landed */
+  const dropped = [];
+  SLOT.edits.overrides = SLOT.edits.overrides.filter(function(o){
+    const nowVal = refRead(merged, o.ref);
+    if(nowVal === undefined){ dropped.push(o.ref); return false; }
+    o.base = clone(nowVal);
+    return true;
+  });
+  SLOT.edits.hidden = SLOT.edits.hidden.filter(function(h){ return locate(merged, h) !== null; });
+
+  closeModal("reviewModal");
+  PENDING = null;
+  rebuild(); save();
+  const parts = ["Sheet data loaded: "+(newS.asOf||"no as-of line")];
+  if(kept.length) parts.push("kept mine in: "+kept.join(", "));
+  if(dropped.length) parts.push(dropped.length+" of your edits dropped (field gone)");
+  logChange(parts.join(" · "));
+  msg("sheetMsg", parts.join(" · "), true);
+  toast("Applied."); jumpTo("charname");
+}
+
+/* ====================== EXPORT / IMPORT ====================== */
+function exportSheet(){
+  document.getElementById("sheetIO").value = JSON.stringify(SLOT.sheet||{}, null, 1);
+  msg("sheetMsg","ST sheet data written to the box — copy it out. (This is the ST block, without your edits.)", true);
+}
+function exportSlot(){
+  document.getElementById("playerIO").value = JSON.stringify({ __vtm:"slot", slot: SLOT }, null, 1);
+  msg("playerMsg","This slot — sheet, your edits, and the whole player layer — written to the box.", true);
+}
+function exportAll(){
+  document.getElementById("playerIO").value = JSON.stringify({ __vtm:"backup", db: DB }, null, 1);
+  msg("playerMsg","Full backup of every slot written to the box.", true);
+}
+function importBlock(){
+  const raw = document.getElementById("playerIO").value.trim();
+  if(!raw){ msg("playerMsg","Nothing in the box.", false); return; }
+  let obj;
+  try{ obj = JSON.parse(raw); }catch(e){ msg("playerMsg","Not valid JSON: "+e.message, false); return; }
+  if(obj && obj.__vtm==="backup" && obj.db && isArr(obj.db.slots)){
+    if(!confirm("Replace EVERY slot on this device with the "+obj.db.slots.length+" slot(s) in this backup?")) return;
+    DB = obj.db; save(); boot(false);
+    msg("playerMsg","Full backup restored — "+DB.slots.length+" slot(s).", true); return;
+  }
+  if(obj && obj.__vtm==="slot" && obj.slot){
+    const s = obj.slot;
+    s.id = newSlotObj().id;
+    s.sheet = s.sheet||{}; s.edits = Object.assign(blankEdits(), s.edits||{}); s.player = Object.assign(blankPlayer(), s.player||{});
+    DB.slots.push(s); DB.active = s.id; save(); boot(false);
+    msg("playerMsg","Slot imported as “"+s.name+"” and made active.", true); return;
+  }
+  /* legacy: a bare player-layer block from the old single-character sheet */
+  if(obj && typeof obj==="object" && ("notes" in obj || "inventory" in obj || "log" in obj)){
+    SLOT.player = Object.assign(blankPlayer(), obj);
+    rebuild(); save();
+    msg("playerMsg","Legacy player layer restored into this slot.", true); return;
+  }
+  msg("playerMsg","Didn’t recognise that block. Expecting a slot export, a full backup, or an old player-layer block.", false);
+}
+function downloadAll(){
+  const d=new Date(); const p=x=>String(x).padStart(2,"0");
+  const fname = "vtm_sheets_backup_"+d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"_"+p(d.getHours())+p(d.getMinutes())+".json";
+  const blob = new Blob([JSON.stringify({__vtm:"backup", db:DB}, null, 1)],{type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = fname;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  msg("playerMsg","Downloaded "+fname, true);
+}
+function resetPlayerLayer(){
+  if(confirm("Reset this character’s player layer — notes, inventory, trackers, rolls, log? The ST sheet and your sheet edits stay.")){
+    SLOT.player = blankPlayer(); rebuild(); save();
+    msg("playerMsg","Player layer reset.", true);
+  }
+}
+
+/* ====================== LOCK ====================== */
+function toggleLock(){
+  UNLOCKED = !UNLOCKED;
+  document.body.classList.toggle("locked", !UNLOCKED);
+  const b = document.getElementById("lockBtn");
+  b.innerHTML = UNLOCKED ? "&#128275; Unlocked" : "&#128274; Locked";
+  b.classList.toggle("on", UNLOCKED);
+  rebuild();
+  if(UNLOCKED) toast("Unlocked — your changes are marked EDITED and kept separate from the ST block.");
+}
+
+/* ====================== EVENT DELEGATION ====================== */
+document.addEventListener("click", function(e){
+  const t = e.target.closest ? e.target.closest("[data-dot],[data-hide],[data-revert],[data-addto],[data-deladd],[data-mat],[data-wp],[data-health],[data-pool],[data-choice],[data-invstatus],[data-invdel],[data-slotopen],[data-slotrename],[data-slotdel],[data-slotdup],[data-slotkind]") : null;
+  if(!t) return;
+  const d = t.dataset;
+
+  if(d.dot!==undefined){
+    const holder = t.closest("[data-dotref]"); if(!holder) return;
+    const ref = holder.dataset.dotref;
+    const v = parseInt(d.dot,10);
+    if(ref.charAt(0)==="+"){
+      const parts = ref.slice(1).split("|");
+      const cur = SLOT.edits.additions[parts[0]][parseInt(parts[1],10)];
+      cur.d = (cur.d===v) ? v-1 : v;
+      rebuild(); save();
+    } else {
+      const cur = refRead(SHEET, ref)||0;
+      setOverride(ref, (cur===v) ? v-1 : v);
+      logChange("Edited "+ref+": "+cur+" → "+((cur===v)?v-1:v));
+    }
+    return;
+  }
+  if(d.hide!==undefined){ toggleHidden(d.hide); return; }
+  if(d.revert!==undefined){ clearOverride(d.revert); toast("Reverted to the ST value."); return; }
+  if(d.addto!==undefined){ addTo(d.addto); return; }
+  if(d.deladd!==undefined){ delAdd(d.deladd, parseInt(d.i,10)); return; }
+  if(d.mat!==undefined){ matClick(d.mat, d.matname); return; }
+  if(d.wp!==undefined){ wpClick(parseInt(d.wp,10)); return; }
+  if(d.health!==undefined){ healthClick(parseInt(d.health,10)); return; }
+  if(d.pool!==undefined){ setDice(parseInt(d.pool,10)); rollDice(); return; }
+  if(d.choice!==undefined){ PENDING.groups[parseInt(d.g,10)].choice = d.choice; renderReview(); return; }
+  if(d.invstatus!==undefined){
+    const i=parseInt(d.invstatus,10), it=SLOT.player.inventory[i], cur=it.status||"carried";
+    it.status = MAT_CYCLE[(MAT_CYCLE.indexOf(cur)+1)%MAT_CYCLE.length];
+    logChange("Inventory — "+(it.n||"item")+": "+cur+" → "+it.status); renderInventory(); return;
+  }
+  if(d.invdel!==undefined){
+    const i=parseInt(d.invdel,10), it=SLOT.player.inventory[i];
+    if(confirm("Remove “"+(it.n||"item")+"”?")){
+      SLOT.player.inventory.splice(i,1); logChange("Inventory removed: "+(it.n||"item")); renderInventory(); }
+    return;
+  }
+  /* slot menu */
+  if(d.slotopen!==undefined){ closeModal("slotModal"); switchSlot(d.slotopen); return; }
+  if(d.slotrename!==undefined){
+    const s = DB.slots.filter(x=>x.id===d.slotrename)[0];
+    const nn = prompt("Rename slot:", s.name); if(nn===null) return;
+    s.name = nn.trim()||s.name; save(); renderSlotSel(); openSlotMenu(); return;
+  }
+  if(d.slotkind!==undefined){
+    const s = DB.slots.filter(x=>x.id===d.slotkind)[0];
+    s.kind = (s.kind==="PC") ? "NPC" : "PC"; save(); renderSlotSel(); openSlotMenu(); return;
+  }
+  if(d.slotdup!==undefined){
+    const s = clone(DB.slots.filter(x=>x.id===d.slotdup)[0]);
+    s.id = newSlotObj().id; s.name = s.name+" (copy)";
+    DB.slots.push(s); save(); openSlotMenu(); renderSlotSel(); return;
+  }
+  if(d.slotdel!==undefined){
+    if(DB.slots.length<=1){ alert("That’s the only slot — there has to be one."); return; }
+    const s = DB.slots.filter(x=>x.id===d.slotdel)[0];
+    if(!confirm("Delete “"+s.name+"” and everything in it? This cannot be undone — export a backup first if you want it.")) return;
+    DB.slots = DB.slots.filter(x=>x.id!==s.id);
+    if(DB.active===s.id) DB.active = DB.slots[0].id;
+    save(); boot(false); openSlotMenu(); return;
+  }
+});
+
+/* text / select / number commits */
+function commitInput(el){
+  const d = el.dataset;
+  if(d.ref!==undefined){
+    let v = el.value;
+    if(el.type==="number") v = Math.max(0, parseInt(v,10)||0);
+    const cur = refRead(SHEET, d.ref);
+    if(JSON.stringify(cur)===JSON.stringify(v)) return;
+    setOverride(d.ref, v);
+    logChange("Edited "+d.ref);
+    return;
+  }
+  if(d.add!==undefined){
+    const i = parseInt(d.i,10);
+    if(d.f==="__self") editAdd(d.add, i, null, el.value);
+    else editAdd(d.add, i, d.f, el.value);
+    return;
+  }
+  if(d.inv!==undefined){
+    const i = parseInt(d.inv,10), it = SLOT.player.inventory[i];
+    if(!it || it[d.f]===el.value) return;
+    const had = it[d.f]; it[d.f] = el.value;
+    if(d.f==="n" && el.value && !had) logChange("Inventory added: "+el.value); else save();
+    return;
+  }
+}
+document.addEventListener("change", function(e){
+  const el = e.target;
+  if(el.tagName==="SELECT" && el.dataset.ref!==undefined) commitInput(el);
+  else if(el.type==="number" && (el.dataset.ref!==undefined)) commitInput(el);
+});
+document.addEventListener("focusout", function(e){
+  const el = e.target;
+  if(el.dataset && (el.dataset.ref!==undefined || el.dataset.add!==undefined || el.dataset.inv!==undefined)) commitInput(el);
+});
+document.getElementById("notes").addEventListener("blur", function(){
+  if(SLOT.player.notes!==this.value){ SLOT.player.notes = this.value; save(); }
+});
+document.getElementById("rollLabel").addEventListener("keydown", function(e){
+  if(e.key==="Enter"){ e.preventDefault(); rollDice(); }
+});
+document.querySelectorAll(".modalwrap").forEach(function(w){
+  w.addEventListener("click", function(e){ if(e.target===w) w.classList.remove("open"); });
+});
+document.addEventListener("keydown", function(e){
+  if(e.key==="Escape") document.querySelectorAll(".modalwrap.open").forEach(w=>w.classList.remove("open"));
+});
+
+/* ====================== BOOT ====================== */
+function rebuild(){
+  SHEET = computeSheet();
+  renderSheet();
+}
+function boot(first){
+  SLOT = activeSlot();
+  renderSlotSel();
+  rebuild();
+  renderNotes(); renderInventory(); renderLog(); renderRolls();
+  if(first){ renderQuickPool(); document.getElementById("diceCount").textContent = DICE_N; }
+}
+load();
+boot(true);
+
+/* ====================== SERVICE WORKER ====================== */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("./sw.js").then(function(reg){
+      reg.addEventListener("updatefound", function(){
+        const nw = reg.installing;
+        if(!nw) return;
+        nw.addEventListener("statechange", function(){
+          if(nw.state==="installed" && navigator.serviceWorker.controller){
+            toast("Offline copy refreshed in the background.");
+          }
+        });
+      });
+    }).catch(function(){ /* opened as a file:// page — no SW, everything else still works */ });
+  });
+}
+</script>
+</body>
+</html>
