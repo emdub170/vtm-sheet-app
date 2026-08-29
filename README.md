@@ -93,9 +93,17 @@ review screen first: every section lists what changed, and you choose **take ST*
 **keep mine** per section. Nothing commits until you press Apply.
 
 If the ST changed something you'd also edited by hand, the review flags it explicitly
-before you commit.
+before you commit. If a block arrives with rows the app can't read a name out of, it
+says so and refuses to load until you confirm — a shape mismatch can't silently blank
+the sheet.
 
 The player layer survives a paste no matter what you choose.
+
+### Undo
+
+**Undo / history** next to the paste box holds the last ten sheets this slot has had.
+Restoring one puts the current sheet into history first, so undo and redo are the same
+button and nothing is ever lost. Your player layer isn't touched by a restore.
 
 ### The lock
 
@@ -145,8 +153,12 @@ vinculumNote, bond, anchor, materiel, threads, scene, sheetNotes
 Anything else lands in an "Additional (new fields)" section rather than being dropped,
 so the ST can add a key without the app needing a change.
 
-Traits accept either shape — `[{"n":"Brawl","d":3,"spec":"..."}]` or `{"Brawl":3}` or
-`{"Brawl":{"rating":3,"specialty":"..."}}`. Attributes accept grouped
+Traits accept either shape — a list or a map — and the name/rating keys can be spelled
+several ways: name as `n`, `label`, or `name`; rating as `d`, `rating`, or `dots`;
+specialty as `spec` or `specialty`. So `[{"n":"Brawl","d":3}]`,
+`[{"label":"Brawl","d":3}]`, `{"Brawl":3}` and `{"Brawl":{"rating":3}}` all work.
+Materiel accepts `item`/`status` as well as `n`/`note`, and `xp.deferred` is folded into
+the XP note. Attributes accept grouped
 (`{"Physical":[...]}`) or flat (`{"Strength":2,"Dexterity":3}`). Clan, generation, and
 individual Discipline lines accept `{"state":"named"|"working"|"redacted","label":"..."}`;
 `redacted` renders as a black bar with the dots still visible.

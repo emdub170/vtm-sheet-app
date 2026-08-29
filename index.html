@@ -358,6 +358,7 @@
       <div class="iobtns">
         <button onclick="loadSheet()">Load sheet data</button>
         <button class="quiet" onclick="exportSheet()">Export sheet data</button>
+        <button class="quiet" onclick="openHistory()">Undo / history</button>
       </div>
       <div class="statusmsg" id="sheetMsg"></div>
     </div>
@@ -391,6 +392,15 @@
       <button class="quiet" onclick="reviewAll('mine')">Keep all mine</button>
       <button class="quiet" onclick="closeModal('reviewModal')">Cancel</button>
     </div>
+  </div>
+</div>
+
+<div class="modalwrap" id="historyModal">
+  <div class="modal">
+    <h2 style="border-top:none;">Sheet history</h2>
+    <div class="hint" style="margin-bottom:10px;">Every sheet this slot has held, newest first. Restoring puts the current one into history first, so nothing is ever lost. Your player layer is not affected.</div>
+    <div id="historyList"></div>
+    <div class="modalbtns"><button class="quiet" onclick="closeModal('historyModal')">Close</button></div>
   </div>
 </div>
 
@@ -450,7 +460,7 @@ function blankPlayer(){
 function newSlotObj(kind, name){
   return { id:"s"+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4),
            name:name||("New "+(kind||"PC")), kind:kind||"PC",
-           sheet:blankSheet(), edits:blankEdits(), player:blankPlayer() };
+           sheet:blankSheet(), edits:blankEdits(), player:blankPlayer(), history:[] };
 }
 function blankDB(){
   const s = newSlotObj("PC","New character");
@@ -512,6 +522,7 @@ function load(){
       s.sheet  = s.sheet  || blankSheet();
       s.edits  = Object.assign(blankEdits(), s.edits||{});
       s.player = Object.assign(blankPlayer(), s.player||{});
+      if(!isArr(s.history)) s.history = [];
       if(!isArr(s.edits.overrides)) s.edits.overrides = [];
       if(!isArr(s.edits.hidden)) s.edits.hidden = [];
       if(!s.edits.additions || isArr(s.edits.additions)) s.edits.additions = {};
@@ -638,12 +649,32 @@ function traitFrom(name, val){
   }
   return { n:name, d:(typeof val==="number"?val:0) };
 }
+/* One trait, however the ST's generator spelled it.
+   name:  n | label | name          rating: d | rating | dots
+   spec:  spec | specialty          note:   note */
+function normTrait(t){
+  if(!t || typeof t!=="object") return t;
+  if(t.n !== undefined && t.d !== undefined) return t;
+  const o = {};
+  o.n = (t.n !== undefined) ? t.n
+      : (t.label !== undefined) ? t.label
+      : (t.name !== undefined) ? t.name : "";
+  o.d = (t.d !== undefined) ? t.d
+      : (t.rating !== undefined) ? t.rating
+      : (t.dots !== undefined) ? t.dots : 0;
+  if(t.spec !== undefined) o.spec = t.spec;
+  else if(t.specialty !== undefined) o.spec = t.specialty;
+  if(t.note !== undefined) o.note = t.note;
+  if(t.id !== undefined) o.id = t.id;
+  return o;
+}
 function mapToTraits(obj){
-  if(isArr(obj)) return obj;
+  if(isArr(obj)) return obj.map(normTrait);
   if(!obj || typeof obj!=="object") return [];
   const out=[]; for(const k in obj){ if(k==="note") continue; out.push(traitFrom(k, obj[k])); }
   return out;
 }
+function slug(s){ return String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,28); }
 function normalizeSheet(raw){
   const s = clone(raw);
   if(s.attributes && !isArr(s.attributes)){
@@ -678,8 +709,8 @@ function normalizeSheet(raw){
   }
   if(s.backgrounds) s.backgrounds = mapToTraits(s.backgrounds);
   if(s.virtues)     s.virtues     = mapToTraits(s.virtues);
-  if(s.vinculum && !isArr(s.vinculum)){
-    const vnote = s.vinculum.note;
+  if(s.vinculum){
+    const vnote = isArr(s.vinculum) ? null : s.vinculum.note;
     s.vinculum = mapToTraits(s.vinculum);
     if(vnote && !s.vinculumNote) s.vinculumNote = vnote;
   }
@@ -689,13 +720,19 @@ function normalizeSheet(raw){
     (s.meritsFlaws.flaws||[]).forEach(f=>mf.push("Flaw — "+f));
     s.meritsFlaws = mf;
   }
-  if(s.xp && s.xp.deferred && !s.xp.note){
-    s.xp.note = "Deferred: " + [].concat(s.xp.deferred).join("; ");
+  /* deferred purchases ride along with the note instead of being dropped */
+  if(s.xp && s.xp.deferred){
+    const dl = "Deferred: " + [].concat(s.xp.deferred).join("; ");
+    s.xp.note = s.xp.note ? (s.xp.note + "\n\n" + dl) : dl;
+    delete s.xp.deferred;
   }
   if(isArr(s.materiel)){
     s.materiel = s.materiel.map(function(m,i){
       if(m.n) return m;
-      return { id: m.id || ("m"+i), n: m.item || m.name || "—", note: m.status || m.note || "" };
+      const name = m.item || m.name || m.label || "—";
+      /* id from the name, not the position — carried/stored marks must not
+         slide onto a different item when the ST reorders the list */
+      return { id: m.id || slug(name) || ("m"+i), n: name, note: m.status || m.note || "" };
     });
   }
   return s;
@@ -1180,6 +1217,75 @@ function openSlotMenu(){
   openModal("slotModal");
 }
 
+/* ====================== SHEET HISTORY (undo) ====================== */
+function pushHistory(sheet, label){
+  if(!has(sheet)) return;
+  if(!isArr(SLOT.history)) SLOT.history = [];
+  SLOT.history.unshift({ t:nowStamp(), asOf:(sheet.asOf||"no as-of line"), label:label||"", sheet:clone(sheet) });
+  SLOT.history = SLOT.history.slice(0, 10);
+}
+function openHistory(){
+  const H = SLOT.history || [];
+  document.getElementById("historyList").innerHTML = H.length
+    ? H.map(function(h,i){
+        return '<div class="difgroup"><div class="difhead">'+
+          '<span><b>'+esc(h.asOf)+'</b>'+(h.label?' <span class="added-mark">'+esc(h.label)+'</span>':'')+'</span>'+
+          '<span class="difchoice"><button data-histrestore="'+i+'">restore</button></span>'+
+          '</div><div class="hint">replaced '+esc(h.t)+'</div></div>';
+      }).join("")
+    : '<div class="hint">No previous sheets yet. The one before each paste is kept here automatically.</div>';
+  openModal("historyModal");
+}
+function restoreHistory(i){
+  const h = (SLOT.history||[])[i];
+  if(!h) return;
+  if(!confirm("Restore the sheet as it stood at “"+h.asOf+"”?\n\nThe sheet you have now is saved into history first, so this is reversible. Your player layer is not touched.")) return;
+  pushHistory(SLOT.sheet, "replaced by a restore");
+  SLOT.history.splice(i+1, 1);            /* the entry we just restored from */
+  SLOT.sheet = clone(h.sheet);
+  reanchorEdits(SLOT.sheet);
+  closeModal("historyModal");
+  rebuild(); save();
+  logChange("Restored sheet from history: "+h.asOf);
+  msg("sheetMsg","Restored “"+h.asOf+"”.", true);
+  toast("Restored."); jumpTo("charname");
+}
+/* re-point your edits at whatever sheet is now underneath them */
+function reanchorEdits(sheet){
+  const dropped = [];
+  SLOT.edits.overrides = SLOT.edits.overrides.filter(function(o){
+    const nowVal = refRead(sheet, o.ref);
+    if(nowVal === undefined){ dropped.push(o.ref); return false; }
+    o.base = clone(nowVal);
+    return true;
+  });
+  SLOT.edits.hidden = SLOT.edits.hidden.filter(function(h){ return locate(sheet, h) !== null; });
+  return dropped;
+}
+
+/* ====================== SHAPE AUDIT ======================
+   A trait array whose items carry no usable name means the block used
+   a spelling the normalizer doesn't know. Catch it before it lands. */
+function auditSheet(s){
+  const bad = [];
+  function chk(where, arr){
+    (arr||[]).forEach(function(t,i){
+      if(!t || typeof t!=="object") return;
+      if(!String(t.n===undefined?"":t.n).trim()) bad.push(where+" row "+(i+1));
+    });
+  }
+  for(const g in (s.attributes||{})) chk("Attributes/"+g, s.attributes[g]);
+  for(const g in (s.abilities||{}))  chk("Abilities/"+g,  s.abilities[g]);
+  chk("Backgrounds", s.backgrounds);
+  chk("Virtues", s.virtues);
+  chk("Vinculum", s.vinculum);
+  chk("Materiel", s.materiel);
+  (s.disciplines||[]).forEach(function(d,i){
+    if(d && d.state !== "redacted" && !String(d.label||"").trim()) bad.push("Disciplines row "+(i+1));
+  });
+  return bad;
+}
+
 /* ====================== IMPORT REVIEW ====================== */
 function traitList(arr){ const m={}; (arr||[]).forEach(t=>{ if(t&&t.n!==undefined) m[t.n]=t; }); return m; }
 
@@ -1336,6 +1442,16 @@ function loadSheet(){
   try{ norm = normalizeSheet(obj); }
   catch(e){ msg("sheetMsg","Couldn’t read that shape: "+e.message, false); return; }
 
+  const bad = auditSheet(norm);
+  if(bad.length){
+    const preview = bad.slice(0,6).join(", ") + (bad.length>6 ? ", and "+(bad.length-6)+" more" : "");
+    if(!confirm("This block has "+bad.length+" row(s) with no readable name:\n\n"+preview+
+                "\n\nThat usually means the ST's generator spelled a field in a way this app doesn't know, and those rows will render blank. Load it anyway?")){
+      msg("sheetMsg","Not loaded — "+bad.length+" row(s) have no readable name ("+preview+"). Send the block back to the ST, or paste it again and choose OK to load it as-is.", false);
+      return;
+    }
+  }
+
   const oldS = SLOT.sheet || {};
   if(!has(oldS)){
     SLOT.sheet = norm; rebuild(); save();
@@ -1344,7 +1460,7 @@ function loadSheet(){
     toast("Sheet loaded."); jumpTo("charname");
     return;
   }
-  PENDING = { sheet: norm, groups: buildDiff(oldS, norm) };
+  PENDING = { sheet: norm, groups: buildDiff(oldS, norm), bad: bad };
   renderReview();
   openModal("reviewModal");
 }
@@ -1352,7 +1468,13 @@ function renderReview(){
   const n = PENDING.sheet;
   document.getElementById("reviewMeta").innerHTML =
     "INCOMING: "+esc(n.asOf || "no as-of line")+"<br>CURRENT: "+esc((SLOT.sheet||{}).asOf || "no as-of line")+
-    "<br>Choose per section. Your player layer — health, willpower, inventory, notes, log, rolls — is untouched either way.";
+    "<br>Choose per section. Your player layer — health, willpower, inventory, notes, log, rolls — is untouched either way." +
+    "<br>The sheet you have now is kept in <b>Undo / history</b>, so applying this is reversible." +
+    (PENDING.bad && PENDING.bad.length
+      ? '<div class="conflict" style="margin-top:8px;">WARNING — '+PENDING.bad.length+
+        ' row(s) in this block have no readable name and will render blank: '+esc(PENDING.bad.slice(0,6).join(", "))+
+        (PENDING.bad.length>6?", …":"")+'</div>'
+      : "");
   document.getElementById("reviewBody").innerHTML = PENDING.groups.map(function(g, gi){
     const conf = conflictsFor(g, n);
     const changed = g.changes.length>0;
@@ -1387,6 +1509,7 @@ function commitReview(){
       if(g.changes.length) kept.push(g.title.replace(/&amp;/g,"&"));
     }
   });
+  pushHistory(oldS, "");                 /* undo point, before anything changes */
   SLOT.sheet = merged;
 
   /* a full pool stays full when the ST raises permanent Willpower */
@@ -1394,14 +1517,7 @@ function commitReview(){
   if(newPerm > oldPerm && SLOT.player.wpTemp === oldPerm) SLOT.player.wpTemp = newPerm;
 
   /* re-anchor your edits against the sheet that actually landed */
-  const dropped = [];
-  SLOT.edits.overrides = SLOT.edits.overrides.filter(function(o){
-    const nowVal = refRead(merged, o.ref);
-    if(nowVal === undefined){ dropped.push(o.ref); return false; }
-    o.base = clone(nowVal);
-    return true;
-  });
-  SLOT.edits.hidden = SLOT.edits.hidden.filter(function(h){ return locate(merged, h) !== null; });
+  const dropped = reanchorEdits(merged);
 
   closeModal("reviewModal");
   PENDING = null;
@@ -1482,7 +1598,7 @@ function toggleLock(){
 
 /* ====================== EVENT DELEGATION ====================== */
 document.addEventListener("click", function(e){
-  const t = e.target.closest ? e.target.closest("[data-dot],[data-hide],[data-revert],[data-addto],[data-deladd],[data-mat],[data-wp],[data-health],[data-pool],[data-choice],[data-invstatus],[data-invdel],[data-slotopen],[data-slotrename],[data-slotdel],[data-slotdup],[data-slotkind]") : null;
+  const t = e.target.closest ? e.target.closest("[data-dot],[data-hide],[data-revert],[data-addto],[data-deladd],[data-mat],[data-wp],[data-health],[data-pool],[data-choice],[data-invstatus],[data-invdel],[data-histrestore],[data-slotopen],[data-slotrename],[data-slotdel],[data-slotdup],[data-slotkind]") : null;
   if(!t) return;
   const d = t.dataset;
 
@@ -1522,6 +1638,7 @@ document.addEventListener("click", function(e){
       SLOT.player.inventory.splice(i,1); logChange("Inventory removed: "+(it.n||"item")); renderInventory(); }
     return;
   }
+  if(d.histrestore!==undefined){ restoreHistory(parseInt(d.histrestore,10)); return; }
   /* slot menu */
   if(d.slotopen!==undefined){ closeModal("slotModal"); switchSlot(d.slotopen); return; }
   if(d.slotrename!==undefined){
