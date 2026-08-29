@@ -7,6 +7,10 @@ with no signal.
 Everything is four files: `index.html`, `manifest.webmanifest`, `sw.js`, and `icons/`.
 No build step, no dependencies, no server code.
 
+The running version is printed under the title in the app. Bump `APP_VERSION` and
+`APP_BUILD` near the top of the script in `index.html` whenever you deploy, so the
+number on screen tells you what you're actually looking at.
+
 ---
 
 ## Putting it on your phone
@@ -117,11 +121,18 @@ The **Slots** button holds as many characters as you want, PC or NPC, each with 
 sheet, edits, and player layer. Sparse sheets render clean — an NPC with three traits
 and a note shows three traits and a note, not a page of empty boxes.
 
+### Blood
+
+Twenty checkboxes, fixed — the app does not scale the pool to generation. Tap a box to
+fill or empty to that point, exactly like Willpower, with a gap every five so the count
+reads at a glance. The ST's blood note still shows underneath. You manage the number.
+
 ### Dice
 
-Pick a number of d10s and roll. Faces only — 10s are inked black and 1s inked red so
-they're easy to pick out of the pool, but nothing is counted for you. Every roll goes
-into the change log.
+Pick a number of d10s, set the difficulty, roll. Faces only — nothing is counted for
+you. Dice at or above the difficulty are inked green; 10s stay black and 1s stay red
+regardless of difficulty, so the faces that matter most never blend in. Pool and
+difficulty are remembered per character. Every roll goes into the change log.
 
 ---
 

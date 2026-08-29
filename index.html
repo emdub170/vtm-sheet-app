@@ -18,7 +18,7 @@
   :root{
     --bone:#e3dbc9; --ink:#221d1a; --oxblood:#6b1219; --tarnish:#8a7440;
     --bone-dk:#d6cbb4; --rule:#4a3f36; --redact:#161210; --dark:#151110;
-    --mine:#2f5d4a;
+    --mine:#2f5d4a; --green:#2c6b3f;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   html{background:var(--dark);}
@@ -168,8 +168,16 @@
      width:38px; height:38px; margin:3px; border:1.5px solid var(--rule);
      background:rgba(255,252,240,.8); font-family:'Courier Prime', monospace;
      font-weight:700; font-size:17px; }
+  .diceface.hit{ background:var(--green); color:#f2efe4; border-color:#1e4a2c; }
   .diceface.ten{ background:var(--ink); color:var(--bone); border-color:var(--ink); }
   .diceface.one{ background:var(--oxblood); color:var(--bone); border-color:#3d0a0e; }
+  .bloodbox{ width:26px; height:26px; border:1.5px solid var(--oxblood); cursor:pointer;
+     display:inline-flex; align-items:center; justify-content:center;
+     background:rgba(255,252,240,.6); user-select:none; }
+  .bloodbox.full{ background:var(--oxblood); border-color:#3d0a0e; }
+  .bloodbox.gap5{ margin-right:9px; }
+  .versionline{ font-family:'Courier Prime', monospace; font-size:10.5px; letter-spacing:.1em;
+     text-align:center; color:var(--rule); opacity:.75; margin:2px 0 0; }
   .dicebar{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
   .dicecount{ font-family:'Courier Prime', monospace; font-size:22px; font-weight:700;
      min-width:2.2em; text-align:center; }
@@ -249,6 +257,8 @@
   <button class="iconbtn" onclick="jumpTo('ioSection')">Data</button>
 </div>
 
+<div class="versionline" id="versionline"></div>
+
 <div id="emptyState" class="emptystate" style="display:none;">
   <h3>No sheet data yet</h3>
   <p>This character slot is empty. Paste the ST&rsquo;s SHEET DATA block into the box at the bottom and press <b>Load sheet data</b>. It stays here until you paste new data &mdash; closing the app doesn&rsquo;t clear it.</p>
@@ -326,12 +336,13 @@
     <button class="quiet" onclick="bumpDice(-1)" style="min-width:44px;">&minus;</button>
     <span class="dicecount" id="diceCount">6</span>
     <button class="quiet" onclick="bumpDice(1)" style="min-width:44px;">+</button>
-    <input type="text" id="rollLabel" placeholder="label, e.g. Perception + Alertness" style="flex:1 1 200px; min-width:140px;">
+    <label class="hint" style="margin:0 0 0 6px;">difficulty</label>
+    <select id="diffSel" onchange="setDiff(this.value)"></select>
     <button onclick="rollDice()">Roll d10s</button>
   </div>
   <div class="quickpool" id="quickPool"></div>
   <div id="diceOut" style="margin-top:10px; min-height:44px;"></div>
-  <div class="hint">Faces only &mdash; no success counting, no botch call. 10s are inked black, 1s are inked red, purely so they&rsquo;re easy to pick out. You read the pool.</div>
+  <div class="hint">Faces only &mdash; nothing is counted for you. Dice at or above the difficulty are inked green; 10s stay black and 1s stay red regardless. You read the pool.</div>
   <div class="rollhist" id="rollHist"></div>
   <div class="iobtns"><button class="quiet tiny" onclick="clearRolls()">Clear roll history</button></div>
 </div>
@@ -426,7 +437,9 @@ const LS_KEY = "vtm_sheets_v2";
 const HEALTH_LEVELS = [
   ["Bruised",""],["Hurt","-1"],["Injured","-1"],["Wounded","-2"],["Mauled","-2"],["Crippled","-5"],["Incapacitated",""]
 ];
-const BLOOD_STATES = ["Sated","Comfortable","Comfortable — running warm","Hungry","Burning"];
+const APP_VERSION = "1.2.0";
+const APP_BUILD = "2026-08-29";
+const BLOOD_BOXES = 20;   /* fixed — not generation-scaled; the player manages the pool */
 const KNOWN_KEYS = ["schema","issuedBy","asOf","identity","attributes","abilities","disciplines","disciplineNote",
   "backgrounds","virtues","humanity","willpowerPerm","bloodNote","meritsFlaws","xp","vinculum","vinculumNote",
   "bond","anchor","materiel","threads","scene","sheetNotes"];
@@ -448,14 +461,15 @@ let SLOT = null;        /* active slot object */
 let SHEET = {};         /* effective sheet = ST sheet + your edits */
 let UNLOCKED = false;
 let DICE_N = 6;
+let DIFF = 6;
 let PENDING = null;     /* incoming sheet under review */
 
 function blankSheet(){ return {}; }
 function blankEdits(){ return { overrides:[], additions:{}, hidden:[] }; }
 function blankPlayer(){
   return { showZeroAbilities:false, wpTemp:null, health:[0,0,0,0,0,0,0],
-           bloodFelt:"Comfortable", bloodPlayerNote:"", notes:"", inventory:[],
-           materielMarks:{}, log:[], rolls:[] };
+           blood:0, notes:"", inventory:[],
+           materielMarks:{}, log:[], rolls:[], dicePool:6, difficulty:6 };
 }
 function newSlotObj(kind, name){
   return { id:"s"+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4),
@@ -990,7 +1004,11 @@ function renderSheet(){
   const empty = !has(SHEET);
   show("emptyState", empty);
   document.getElementById("sheetBody").style.display = empty && !UNLOCKED ? "none" : "";
-  if(empty && !UNLOCKED) return;
+  if(empty && !UNLOCKED){
+    /* the body is hidden, but don't leave the previous character's trackers in it */
+    ["willpower","blood","health"].forEach(function(id){ document.getElementById(id).innerHTML = ""; });
+    return;
+  }
 
   renderIdentity();
 
@@ -1086,17 +1104,22 @@ function wpClick(i){
 }
 function renderBlood(){
   const P = SLOT.player;
-  let html = '<select id="bloodSel">' + BLOOD_STATES.map(function(b){
-    return '<option'+(b===P.bloodFelt?" selected":"")+'>'+esc(b)+'</option>'; }).join("") + '</select>';
+  const n = Math.max(0, Math.min(Number(P.blood)||0, BLOOD_BOXES));
+  let html = '<div class="boxes">';
+  for(let i=1;i<=BLOOD_BOXES;i++){
+    html += '<span class="bloodbox'+(i<=n?" full":"")+((i%5===0 && i<BLOOD_BOXES)?" gap5":"")+
+            '" data-blood="'+i+'"></span>';
+  }
+  html += '</div><div class="hint">Blood: '+n+' / '+BLOOD_BOXES+'. Tap a box to fill or empty to that point.</div>';
   if(has(SHEET.bloodNote) || UNLOCKED)
-    html += '<div class="hint" style="margin-top:6px;">'+(UNLOCKED?fBlock("bloodNote", SHEET.bloodNote||"", "ST blood note"):esc(SHEET.bloodNote))+'</div>';
-  html += '<input type="text" id="bloodPN" placeholder="your note (e.g. fed at the lots)" style="width:100%; margin-top:6px;" value="'+
-          attr(P.bloodPlayerNote||"")+'">';
+    html += '<div class="hint">'+(UNLOCKED?fBlock("bloodNote", SHEET.bloodNote||"", "ST blood note"):esc(SHEET.bloodNote))+'</div>';
   document.getElementById("blood").innerHTML = html;
-  document.getElementById("bloodSel").addEventListener("change", function(){
-    const v=this.value; if(v!==P.bloodFelt){ const was=P.bloodFelt; P.bloodFelt=v; logChange("Blood felt: "+was+" → "+v); } });
-  document.getElementById("bloodPN").addEventListener("blur", function(){
-    const v=this.value; if(v!==P.bloodPlayerNote){ P.bloodPlayerNote=v; logChange("Blood note: "+(v||"(cleared)")); } });
+}
+function bloodClick(i){
+  const P = SLOT.player, before = Math.max(0, Math.min(Number(P.blood)||0, BLOOD_BOXES));
+  P.blood = (i===before) ? i-1 : i;
+  if(P.blood!==before) logChange("Blood "+before+" → "+P.blood);
+  renderBlood();
 }
 function renderHealth(){
   const marksArr=["","╱","✕","✱"];
@@ -1117,12 +1140,23 @@ function healthClick(idx){
 }
 
 /* ====================== DICE ====================== */
-function bumpDice(n){
-  DICE_N = Math.max(1, Math.min(40, DICE_N + n));
+function bumpDice(n){ setDice(DICE_N + n); }
+function setDice(n){
+  DICE_N = Math.max(1, Math.min(40, n));
   document.getElementById("diceCount").textContent = DICE_N;
+  SLOT.player.dicePool = DICE_N; save();
 }
-function setDice(n){ DICE_N = n; document.getElementById("diceCount").textContent = DICE_N; }
-function renderQuickPool(){
+function setDiff(v){
+  DIFF = Math.max(2, Math.min(10, parseInt(v,10)||6));
+  SLOT.player.difficulty = DIFF; save();
+}
+function renderDiceControls(){
+  DICE_N = Math.max(1, Math.min(40, Number(SLOT.player.dicePool)||6));
+  DIFF   = Math.max(2, Math.min(10, Number(SLOT.player.difficulty)||6));
+  document.getElementById("diceCount").textContent = DICE_N;
+  let opts = "";
+  for(let i=2;i<=10;i++) opts += '<option value="'+i+'"'+(i===DIFF?" selected":"")+'>'+i+'</option>';
+  document.getElementById("diffSel").innerHTML = opts;
   let h = "";
   for(let i=1;i<=12;i++) h += '<button class="quiet" data-pool="'+i+'">'+i+'</button>';
   document.getElementById("quickPool").innerHTML = h;
@@ -1137,23 +1171,29 @@ function d10(){
   }
   return Math.floor(Math.random()*10)+1;
 }
+/* 10s black and 1s red always — they are the faces you must not miss.
+   Everything else at or above the difficulty goes green. */
+function faceClass(f, diff){
+  if(f===10) return " ten";
+  if(f===1)  return " one";
+  return (f >= diff) ? " hit" : "";
+}
 function rollDice(){
-  const n = DICE_N;
+  const n = DICE_N, diff = DIFF;
   const faces = [];
   for(let i=0;i<n;i++) faces.push(d10());
-  const label = document.getElementById("rollLabel").value.trim();
   const sorted = faces.slice().sort((a,b)=>b-a);
   document.getElementById("diceOut").innerHTML =
-    '<div>'+faces.map(f=>'<span class="diceface'+(f===10?" ten":(f===1?" one":""))+'">'+f+'</span>').join("")+'</div>'+
-    '<div class="hint">'+n+'d10'+(label?" — "+esc(label):"")+" · sorted: "+sorted.join(", ")+'</div>';
-  SLOT.player.rolls.unshift({ t:nowStamp(), n:n, label:label, faces:faces });
+    '<div>'+faces.map(f=>'<span class="diceface'+faceClass(f,diff)+'">'+f+'</span>').join("")+'</div>'+
+    '<div class="hint">'+n+'d10 vs difficulty '+diff+' · sorted: '+sorted.join(", ")+'</div>';
+  SLOT.player.rolls.unshift({ t:nowStamp(), n:n, diff:diff, faces:faces });
   SLOT.player.rolls = SLOT.player.rolls.slice(0,40);
   renderRolls();
-  logChange("Roll "+n+"d10"+(label?" ("+label+")":"")+": "+faces.join(" "));
+  logChange("Roll "+n+"d10 vs "+diff+": "+faces.join(" "));
 }
 function renderRolls(){
   document.getElementById("rollHist").innerHTML = (SLOT.player.rolls||[]).map(function(r){
-    return '<div>'+esc(r.t)+" · "+r.n+"d10"+(r.label?" · "+esc(r.label):"")+" — "+esc(r.faces.join(" "))+'</div>';
+    return '<div>'+esc(r.t)+" · "+r.n+"d10"+(r.diff?" vs "+r.diff:"")+" — "+esc(r.faces.join(" "))+'</div>';
   }).join("") || '<div style="opacity:.6;">No rolls yet.</div>';
 }
 function clearRolls(){ SLOT.player.rolls = []; renderRolls(); save(); }
@@ -1598,7 +1638,7 @@ function toggleLock(){
 
 /* ====================== EVENT DELEGATION ====================== */
 document.addEventListener("click", function(e){
-  const t = e.target.closest ? e.target.closest("[data-dot],[data-hide],[data-revert],[data-addto],[data-deladd],[data-mat],[data-wp],[data-health],[data-pool],[data-choice],[data-invstatus],[data-invdel],[data-histrestore],[data-slotopen],[data-slotrename],[data-slotdel],[data-slotdup],[data-slotkind]") : null;
+  const t = e.target.closest ? e.target.closest("[data-dot],[data-hide],[data-revert],[data-addto],[data-deladd],[data-mat],[data-wp],[data-blood],[data-health],[data-pool],[data-choice],[data-invstatus],[data-invdel],[data-histrestore],[data-slotopen],[data-slotrename],[data-slotdel],[data-slotdup],[data-slotkind]") : null;
   if(!t) return;
   const d = t.dataset;
 
@@ -1624,6 +1664,7 @@ document.addEventListener("click", function(e){
   if(d.deladd!==undefined){ delAdd(d.deladd, parseInt(d.i,10)); return; }
   if(d.mat!==undefined){ matClick(d.mat, d.matname); return; }
   if(d.wp!==undefined){ wpClick(parseInt(d.wp,10)); return; }
+  if(d.blood!==undefined){ bloodClick(parseInt(d.blood,10)); return; }
   if(d.health!==undefined){ healthClick(parseInt(d.health,10)); return; }
   if(d.pool!==undefined){ setDice(parseInt(d.pool,10)); rollDice(); return; }
   if(d.choice!==undefined){ PENDING.groups[parseInt(d.g,10)].choice = d.choice; renderReview(); return; }
@@ -1703,9 +1744,6 @@ document.addEventListener("focusout", function(e){
 document.getElementById("notes").addEventListener("blur", function(){
   if(SLOT.player.notes!==this.value){ SLOT.player.notes = this.value; save(); }
 });
-document.getElementById("rollLabel").addEventListener("keydown", function(e){
-  if(e.key==="Enter"){ e.preventDefault(); rollDice(); }
-});
 document.querySelectorAll(".modalwrap").forEach(function(w){
   w.addEventListener("click", function(e){ if(e.target===w) w.classList.remove("open"); });
 });
@@ -1723,7 +1761,9 @@ function boot(first){
   renderSlotSel();
   rebuild();
   renderNotes(); renderInventory(); renderLog(); renderRolls();
-  if(first){ renderQuickPool(); document.getElementById("diceCount").textContent = DICE_N; }
+  renderDiceControls();   /* pool and difficulty are per-character */
+  document.getElementById("versionline").textContent =
+    "APP v"+APP_VERSION+" · "+APP_BUILD;
 }
 load();
 boot(true);
