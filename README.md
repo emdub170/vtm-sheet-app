@@ -138,7 +138,30 @@ three ways:
   the existing log or add alongside it, skipping exact duplicates. **Export log** writes
   the current log back out in the same shape, which is how you move it between devices.
 
-Columns are Write, Trait, Change, XP, Pricing/note, and a Running total. Rows sort by the
+### Spending XP
+
+The log is the wallet. Awards add, purchases subtract, and **banked = earned − spent**.
+The ST's own `xp` block is displayed underneath as a cross-check and says plainly when
+it disagrees with your ledger — it is never the source.
+
+**A dot cannot rise except by being bought.** With the sheet locked, tapping a dot above
+a trait's current rating opens a spend dialog: it shows the trait, the change, your
+banked total and what it becomes, and a cost suggested from the V20 chart (p.124, priced
+at current rating) that you can overwrite. Nothing moves until you confirm — and if the
+cost exceeds what you have banked, Confirm is disabled and it tells you the shortfall.
+Tapping a dot *below* the current rating offers to undo that trait's most recent
+purchase and refund it.
+
+Bought ratings are marked `BOUGHT` rather than `EDITED`. Traits the ST never listed —
+a zero-dot Ability from the V20 roster — can be bought too; the row is created on
+purchase.
+
+Unlocking the sheet still edits dots freely. That mode is for correcting ST data and
+deliberately bypasses the gate, so it does not touch the ledger.
+
+`+ Add XP` records an award.
+
+Columns are Write, Trait, Change, XP, Pricing/note, and a running banked balance. Rows sort by the
 first session number in the Write tag, so a banded tag like `S19-S28` files under 19.
 **Oldest first / Newest first** flips the display; the running total is always computed in
 write order, so the last chronological row is the true total either way.
@@ -150,6 +173,14 @@ aren't bought.
 
 One wrinkle: entries captured by a paste are not removed if you then undo that paste
 from **Undo / history**. Delete them by hand if you back one out.
+
+### Specialties
+
+Only Attributes and Abilities carry a specialty, and only at **4 dots or more**. Below
+that rating, and on Backgrounds, Virtues, Disciplines and Vinculum, no specialty field is
+offered. If an ST block puts a specialty somewhere the rule doesn't allow, the text is
+still shown — as a plain note rather than a parenthesised specialty — so nothing is lost.
+Buying a trait up to 4 opens its specialty slot.
 
 ### Blood
 

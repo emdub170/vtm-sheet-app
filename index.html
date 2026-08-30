@@ -145,6 +145,15 @@
   .statuschip.consumed,.statuschip.transferred{opacity:.55; text-decoration:line-through;}
   td.xprun{font-family:'Courier Prime',monospace; font-size:12.5px; text-align:right;
      color:var(--rule); white-space:nowrap;}
+  tr.awardrow td{background:rgba(47,93,74,.10);}
+  td.xpcell{white-space:nowrap;}
+  td.xpcell input{width:3.2em;}
+  .xpsign{font-family:'Courier Prime',monospace; font-weight:700; color:var(--oxblood); margin-right:3px;}
+  .xpsign.aw{color:var(--mine);}
+  .dots.buyable{cursor:pointer;}
+  .dots.buyable .dot-e:hover{opacity:.8; color:var(--oxblood);}
+  .walletline{font-family:'Courier Prime',monospace; font-size:14px;}
+  .walletline b{color:var(--oxblood);}
 
   /* ---------- edit affordances ---------- */
   .edited{ box-shadow:inset 2px 0 0 var(--tarnish); padding-left:5px; }
@@ -152,6 +161,8 @@
      letter-spacing:.08em; margin-left:5px; }
   .added{ box-shadow:inset 2px 0 0 var(--mine); padding-left:5px; }
   .added-mark{ font-family:'Courier Prime',monospace; font-size:10px; color:var(--mine);
+     letter-spacing:.08em; margin-left:5px; }
+  .bought-mark{ font-family:'Courier Prime',monospace; font-size:10px; color:var(--green);
      letter-spacing:.08em; margin-left:5px; }
   .hiddenrow{ opacity:.4; text-decoration:line-through; }
   input.ed, textarea.ed{ width:100%; }
@@ -317,13 +328,14 @@
       <th style="width:56px">Running</th><th style="width:30px"></th></tr></thead>
       <tbody></tbody></table></div>
     <div class="iobtns" style="margin-top:8px;">
-      <button class="quiet" onclick="addXpRow()">+ Add entry</button>
+      <button onclick="openAwardModal()">+ Add XP</button>
+      <button class="quiet" onclick="addXpRow()">Blank row</button>
       <button class="quiet" onclick="scanXp()">Scan sheet notes</button>
       <button class="quiet" id="xpOrderBtn" onclick="toggleXpOrder()">Oldest first</button>
       <button class="quiet" onclick="exportXpLog()">Export log</button>
       <button class="quiet" onclick="clearXpLog()">Clear log</button>
     </div>
-    <div class="hint">New dots are logged automatically whenever you load ST data. This log is yours &mdash; it survives a sheet reissue, and every field is editable.</div>
+    <div class="hint">Tap a dot on the sheet to buy it &mdash; the XP is spent first, then the dot rises. Tap a dot below the current rating to undo a purchase and refund it. Unlocking the sheet bypasses the gate; that mode is for correcting ST data, not for buying.</div>
   </div>
 
   <div id="sec-chronicle">
@@ -425,6 +437,26 @@
   </div>
 </div>
 
+<div class="modalwrap" id="xpModal">
+  <div class="modal">
+    <h2 style="border-top:none;" id="xpModalTitle">Spend experience</h2>
+    <div id="xpModalWhat" class="issue-line" style="text-align:left; margin-bottom:10px;"></div>
+    <div class="band" id="xpModalWallet"></div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <label class="hint">Write / session<br><input type="text" id="xpmSession" style="width:100%;"></label>
+      <label class="hint">XP<br><input type="number" id="xpmCost" min="0" style="width:100%;"></label>
+    </div>
+    <label class="hint" style="display:block; margin-top:8px;">Pricing / note<br>
+      <input type="text" id="xpmNote" style="width:100%;"></label>
+    <div class="hint" id="xpmSuggest" style="margin-top:6px;"></div>
+    <div class="conflict" id="xpmWarn" style="display:none;"></div>
+    <div class="modalbtns">
+      <button id="xpmGo" onclick="xpModalConfirm()">Confirm</button>
+      <button class="quiet" onclick="closeModal('xpModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="modalwrap" id="historyModal">
   <div class="modal">
     <h2 style="border-top:none;">Sheet history</h2>
@@ -456,7 +488,7 @@ const LS_KEY = "vtm_sheets_v2";
 const HEALTH_LEVELS = [
   ["Bruised",""],["Hurt","-1"],["Injured","-1"],["Wounded","-2"],["Mauled","-2"],["Crippled","-5"],["Incapacitated",""]
 ];
-const APP_VERSION = "1.4.0";
+const APP_VERSION = "1.5.0";
 const APP_BUILD = "2026-08-29";
 const BLOOD_BOXES = 20;   /* fixed — not generation-scaled; the player manages the pool */
 const KNOWN_KEYS = ["schema","issuedBy","asOf","identity","attributes","abilities","disciplines","disciplineNote",
@@ -525,12 +557,15 @@ function closeModal(id){ document.getElementById(id).classList.remove("open"); }
 
 function dots(n, max, ref){
   max = max || 5; n = Math.max(0, Math.min(Number(n)||0, max));
-  const editable = UNLOCKED && ref;
+  /* Unlocked, a dot is a free edit. Locked, a dot on a buyable trait is a purchase. */
+  const buyMode = !UNLOCKED && ref && isBuyable(ref);
+  const active = ref && (UNLOCKED || buyMode);
   let s = "";
   for(let i=0;i<max;i++){
-    s += '<span class="'+(i<n?"dot-f":"dot-e")+'"'+(editable?' data-dot="'+(i+1)+'"':'')+'>'+(i<n?"●":"○")+'</span>';
+    s += '<span class="'+(i<n?"dot-f":"dot-e")+'"'+(active?' data-dot="'+(i+1)+'"':'')+'>'+(i<n?"●":"○")+'</span>';
   }
-  return '<span class="dots'+(editable?" editable":"")+'"'+(editable?' data-dotref="'+attr(ref)+'" data-max="'+max+'"':'')+'>'+s+'</span>';
+  return '<span class="dots'+(active?" editable":"")+(buyMode?" buyable":"")+'"'+
+         (active?' data-dotref="'+attr(ref)+'" data-max="'+max+'"':'')+'>'+s+'</span>';
 }
 
 /* ====================== PERSISTENCE ====================== */
@@ -591,7 +626,11 @@ function locate(root, ref, createMissing){
 function step(cur, p, createMissing){
   if(isArr(cur)){
     const idx = arrIndex(cur, p);
-    return idx<0 ? undefined : cur[idx];
+    if(idx >= 0) return cur[idx];
+    /* Buying a trait the ST never listed — e.g. a zero-dot roster Ability —
+       has to bring the row into being, or the XP is spent and nothing moves. */
+    if(createMissing && p.charAt(0) !== "#"){ const o = {n:p, d:0}; cur.push(o); return o; }
+    return undefined;
   }
   if(cur && typeof cur==="object"){
     if(!(p in cur) && createMissing) cur[p] = {};
@@ -774,7 +813,14 @@ function normalizeSheet(raw){
 /* ====================== FIELD RENDERERS ====================== */
 function marks(ref){
   const ov = findOv(ref);
-  return ov ? ' <span class="edited-mark" title="ST issued: '+attr(JSON.stringify(ov.base))+'">EDITED</span>' : "";
+  if(!ov) return "";
+  /* a rating you paid for reads as bought, not as a correction */
+  if(/\|d$/.test(ref)){
+    const name = refTraitName(ref);
+    const paid = (SLOT.player.xpLog||[]).some(function(e){ return e.kind!=="award" && e.trait===name; });
+    if(paid) return ' <span class="bought-mark">BOUGHT</span>';
+  }
+  return ' <span class="edited-mark" title="ST issued: '+attr(JSON.stringify(ov.base))+'">EDITED</span>';
 }
 function cls(ref, extra){
   return (findOv(ref) ? "edited " : "") + (extra||"");
@@ -809,17 +855,29 @@ function revertBtn(ref){
 }
 
 /* ====================== RENDER: SHEET ====================== */
+/* House rule: only Attributes and Abilities carry a specialty, and only at 4+ dots.
+   A specialty sitting on anything else is shown as plain note text, never dropped. */
+function canSpec(ref, d){
+  const sec = refSection(ref);
+  return (sec === "attributes" || sec === "abilities") && (Number(d)||0) >= 4;
+}
 function traitRow(t, ref, maxDots){
   const hid = isHidden(ref);
   const specRef = ref+"|spec";
   const noteRef = ref+"|note";
+  const specOK = canSpec(ref, t.d);
+  /* some ST blocks carry the same string in both fields — show it once */
+  const dupe = t.spec && t.note && String(t.spec).trim() === String(t.note).trim();
+  if(dupe) t = Object.assign({}, t, {note: undefined});
   let name = esc(t.n);
   let extra = "";
   if(UNLOCKED){
-    extra = ' <span class="spec">'+fText(specRef, t.spec||"", "specialty", true)+'</span>';
+    if(specOK) extra += ' <span class="spec">'+fText(specRef, t.spec||"", "specialty", true)+'</span>';
+    else if(t.spec) extra += ' <span class="spec">— '+esc(t.spec)+' <i>(not a specialty at this rating)</i></span>';
     if(t.note!==undefined || findOv(noteRef)) extra += ' <span class="spec">'+fText(noteRef, t.note||"", "note", true)+'</span>';
   } else {
-    if(t.spec) extra += ' <span class="spec '+cls(specRef)+'">('+esc(t.spec)+')</span>';
+    if(t.spec && specOK) extra += ' <span class="spec '+cls(specRef)+'">('+esc(t.spec)+')</span>';
+    else if(t.spec) extra += ' <span class="spec">— '+esc(t.spec)+'</span>';
     if(t.note) extra += ' <span class="spec '+cls(noteRef)+'">— '+esc(t.note)+'</span>';
   }
   return '<div class="trait'+(hid?" hiddenrow":"")+' '+cls(ref+"|d")+'"><span class="tname">'+name+extra+
@@ -1292,6 +1350,177 @@ function traitMapAll(s){
   return out;
 }
 function uid(){ return "x"+Math.random().toString(36).slice(2,9); }
+
+/* ---------- the wallet ----------
+   The log is the whole truth: awards add, purchases subtract. The ST's own
+   xp block is shown alongside as a cross-check, never as the source. */
+function xpWallet(){
+  let earned = 0, spent = 0;
+  (SLOT.player.xpLog||[]).forEach(function(e){
+    const v = parseInt(e.xp,10);
+    if(!isFinite(v)) return;
+    if(e.kind === "award") earned += v; else spent += v;
+  });
+  return { earned:earned, spent:spent, banked:earned - spent };
+}
+
+/* Which sections a dot can actually be bought in. */
+const BUYABLE = {attributes:1, abilities:1, disciplines:1, virtues:1, backgrounds:1, willpowerPerm:1};
+function refSection(ref){ return String(ref).replace(/^\+/,"").split("|")[0].split(".")[0]; }
+function isBuyable(ref){ return !!BUYABLE[refSection(ref)]; }
+function refTraitName(ref){
+  if(ref.charAt(0)==="+"){
+    const p = ref.slice(1).split("|");
+    const it = (SLOT.edits.additions[p[0]]||[])[parseInt(p[1],10)];
+    return (it && (it.n || it.label)) || "(unnamed)";
+  }
+  const parts = ref.split("|");
+  if(parts[0] === "willpowerPerm") return "Willpower";
+  if(parts.length >= 2) return parts[parts.length-2].replace(/^#/,"line ");
+  return parts[0];
+}
+/* V20 p.124, priced at CURRENT rating. Offered as a suggestion, never imposed. */
+function suggestCost(ref, from, to){
+  if(to !== from + 1) return null;
+  const sec = refSection(ref);
+  if(sec === "attributes")   return { cost: from*4, how:"Attribute, "+from+" × 4" };
+  if(sec === "abilities")    return from===0 ? { cost:3, how:"new Ability, flat 3" }
+                                             : { cost: from*2, how:"Ability, "+from+" × 2" };
+  if(sec === "disciplines")  return from===0 ? { cost:10, how:"new Discipline, flat 10" }
+                                             : { cost: from*5, how:"in-clan Discipline, "+from+" × 5" };
+  if(sec === "virtues")      return { cost: from*2, how:"Virtue, "+from+" × 2" };
+  if(sec === "backgrounds")  return { cost: from*2, how:"Background, "+from+" × 2" };
+  if(sec === "willpowerPerm")return { cost: from*1, how:"Willpower, "+from+" × 1" };
+  return null;
+}
+
+/* ---------- purchase / award modal ---------- */
+let XPM = null;
+function openAwardModal(){
+  XPM = { mode:"award" };
+  document.getElementById("xpModalTitle").textContent = "Add experience";
+  document.getElementById("xpModalWhat").textContent = "An award from the ST. It raises your banked total.";
+  document.getElementById("xpmSession").value = sessionTag(SHEET.asOf);
+  document.getElementById("xpmCost").value = "";
+  document.getElementById("xpmNote").value = "";
+  document.getElementById("xpmSuggest").textContent = "";
+  document.getElementById("xpmWarn").style.display = "none";
+  document.getElementById("xpmGo").textContent = "Add XP";
+  paintWallet();
+  openModal("xpModal");
+  setTimeout(function(){ document.getElementById("xpmCost").focus(); }, 60);
+}
+function openBuyModal(ref, from, to){
+  const name = refTraitName(ref);
+  const sug = suggestCost(ref, from, to);
+  XPM = { mode:"buy", ref:ref, from:from, to:to, name:name };
+  document.getElementById("xpModalTitle").textContent = "Spend experience";
+  document.getElementById("xpModalWhat").innerHTML =
+    "<b>"+esc(name)+"</b> &nbsp; "+(from===0 ? "new at "+to : from+" &rarr; "+to)+
+    "<br>The dot is not raised until the XP is spent on it.";
+  document.getElementById("xpmSession").value = sessionTag(SHEET.asOf);
+  document.getElementById("xpmCost").value = sug ? sug.cost : "";
+  document.getElementById("xpmNote").value = sug ? sug.how : "";
+  document.getElementById("xpmSuggest").textContent = sug
+    ? "Suggested from the V20 chart (p.124), priced at current rating. Change it if your table prices it differently."
+    : "No standard price for this one — enter what the table charged.";
+  document.getElementById("xpmGo").textContent = "Spend and raise";
+  paintWallet();
+  openModal("xpModal");
+}
+function paintWallet(){
+  const w = xpWallet();
+  const cost = parseInt(document.getElementById("xpmCost").value,10);
+  const after = (XPM && XPM.mode==="buy") ? w.banked - (isFinite(cost)?cost:0)
+                                          : w.banked + (isFinite(cost)?cost:0);
+  document.getElementById("xpModalWallet").innerHTML =
+    '<span class="bandtitle">EXPERIENCE</span>'+
+    '<div style="font-family:\'Courier Prime\',monospace; font-size:13px;">'+
+    w.earned+' earned &middot; '+w.spent+' spent &middot; <b>'+w.banked+' banked</b>'+
+    (isFinite(cost) ? ' &nbsp;&rarr;&nbsp; <b>'+after+' banked</b> after this' : '')+'</div>';
+  const warn = document.getElementById("xpmWarn");
+  if(XPM && XPM.mode==="buy" && isFinite(cost) && cost > w.banked){
+    warn.textContent = "That costs "+cost+" and you have "+w.banked+" banked. Add the award first, or lower the price.";
+    warn.style.display = "";
+    document.getElementById("xpmGo").disabled = true;
+  } else {
+    warn.style.display = "none";
+    document.getElementById("xpmGo").disabled = false;
+  }
+}
+function xpModalConfirm(){
+  const cost = parseInt(document.getElementById("xpmCost").value,10);
+  const sess = document.getElementById("xpmSession").value.trim();
+  const note = document.getElementById("xpmNote").value.trim();
+  if(!isFinite(cost) || cost < 0){ toast("Enter the XP amount."); return; }
+  const w = xpWallet();
+
+  if(XPM.mode === "award"){
+    SLOT.player.xpLog.push({ id:uid(), kind:"award", session:sess, trait:"Award",
+                             change:"", xp:String(cost), note:note });
+    closeModal("xpModal"); renderXpLog(); save();
+    logChange("XP award +"+cost+(sess?" ("+sess+")":""));
+    toast("+"+cost+" XP. Banked "+xpWallet().banked+".");
+    return;
+  }
+
+  if(cost > w.banked){ toast("Not enough banked."); return; }
+
+  /* the spend is recorded, and only then does the dot move */
+  SLOT.player.xpLog.push({ id:uid(), kind:"spend", session:sess, trait:XPM.name,
+                           change: (XPM.from===0 ? "new at "+XPM.to : XPM.from+"→"+XPM.to),
+                           xp:String(cost), note:note });
+  applyRating(XPM.ref, XPM.to);
+  closeModal("xpModal"); rebuild(); renderXpLog(); save();
+  logChange("Spent "+cost+" XP: "+XPM.name+" "+(XPM.from===0?("new at "+XPM.to):(XPM.from+"→"+XPM.to))+
+            " · "+xpWallet().banked+" banked");
+  toast(XPM.name+" is now "+XPM.to+". "+xpWallet().banked+" banked.");
+}
+function curRating(ref){
+  if(ref.charAt(0)==="+"){
+    const p = ref.slice(1).split("|");
+    const it = (SLOT.edits.additions[p[0]]||[])[parseInt(p[1],10)];
+    return Number(it && it.d) || 0;
+  }
+  return Number(refRead(SHEET, ref)) || 0;
+}
+/* Write a rating, whether it lives in the ST sheet or in your own additions. */
+function applyRating(ref, val){
+  if(ref.charAt(0)==="+"){
+    const p = ref.slice(1).split("|");
+    const it = (SLOT.edits.additions[p[0]]||[])[parseInt(p[1],10)];
+    if(it) it.d = val;
+    return;
+  }
+  setOverrideQuiet(ref, val);
+}
+function setOverrideQuiet(ref, val){
+  const base = refRead(SLOT.sheet, ref);
+  if(JSON.stringify(base)===JSON.stringify(val)){
+    SLOT.edits.overrides = SLOT.edits.overrides.filter(o=>o.ref!==ref);
+  } else {
+    const ex = findOv(ref);
+    if(ex) ex.value = val;
+    else SLOT.edits.overrides.push({ ref:ref, base:clone(base===undefined?null:base), value:val });
+  }
+}
+/* Clicking below the current rating unwinds the most recent purchase of that trait. */
+function tryRefund(ref, from, to){
+  const name = refTraitName(ref);
+  const L = SLOT.player.xpLog||[];
+  let idx = -1;
+  for(let i=L.length-1;i>=0;i--){ if(L[i].kind!=="award" && L[i].trait===name){ idx=i; break; } }
+  if(idx < 0){ toast("No purchase of "+name+" in the log to undo."); return; }
+  const e = L[idx];
+  const amt = parseInt(e.xp,10);
+  if(!confirm("Undo “"+name+" "+e.change+"” and refund "+(isFinite(amt)?amt:0)+" XP?\n\n"+name+
+              " goes back to "+to+".")) return;
+  L.splice(idx,1);
+  applyRating(ref, to);
+  rebuild(); renderXpLog(); save();
+  logChange("Refunded "+(isFinite(amt)?amt:0)+" XP: "+name+" back to "+to+" · "+xpWallet().banked+" banked");
+  toast("Refunded. "+xpWallet().banked+" banked.");
+}
 function sessionTag(asOf){
   const m = String(asOf||"").match(/\bS(\d+)\b/);
   return m ? ("S"+m[1]) : String(asOf||"").slice(0,10);
@@ -1375,7 +1604,7 @@ function xpRows(){
   let run = 0;
   const out = asc.map(function(e){
     const v = parseInt(e.xp,10);
-    if(isFinite(v)) run += v;
+    if(isFinite(v)) run += (e.kind==="award" ? v : -v);   /* running banked balance */
     return { e:e, run:run };
   });
   return (SLOT.player.xpAsc === false) ? out.slice().reverse() : out;
@@ -1390,10 +1619,12 @@ function renderXpLog(){
   document.querySelector("#xplogtable tbody").innerHTML = rows.length
     ? rows.map(function(r){
         const e = r.e;
-        return '<tr><td><input type="text" value="'+attr(e.session)+'" data-xp="'+attr(e.id)+'" data-f="session"></td>'+
+        const aw = (e.kind === "award");
+        return '<tr'+(aw?' class="awardrow"':'')+'><td><input type="text" value="'+attr(e.session)+'" data-xp="'+attr(e.id)+'" data-f="session"></td>'+
           '<td><input type="text" value="'+attr(e.trait)+'" data-xp="'+attr(e.id)+'" data-f="trait" placeholder="trait"></td>'+
           '<td><input type="text" value="'+attr(e.change)+'" data-xp="'+attr(e.id)+'" data-f="change" placeholder="2→3"></td>'+
-          '<td><input type="text" value="'+attr(e.xp)+'" data-xp="'+attr(e.id)+'" data-f="xp" placeholder="—"></td>'+
+          '<td class="xpcell"><span class="xpsign'+(aw?" aw":"")+'">'+(aw?"+":"−")+'</span>'+
+          '<input type="text" value="'+attr(e.xp)+'" data-xp="'+attr(e.id)+'" data-f="xp" placeholder="—"></td>'+
           '<td><input type="text" value="'+attr(e.note||"")+'" data-xp="'+attr(e.id)+'" data-f="note" placeholder="pricing / why"></td>'+
           '<td class="xprun">'+r.run+'</td>'+
           '<td><button class="quiet tiny" data-xpdel="'+attr(e.id)+'">×</button></td></tr>';
@@ -1402,13 +1633,21 @@ function renderXpLog(){
   const btn = document.getElementById("xpOrderBtn");
   if(btn) btn.textContent = (SLOT.player.xpAsc === false) ? "Newest first" : "Oldest first";
 
-  const logged = L.reduce(function(sum,e){ const v = parseInt(e.xp,10); return sum + (isFinite(v)?v:0); }, 0);
+  const w = xpWallet();
   const noCost = L.filter(function(e){ return !isFinite(parseInt(e.xp,10)); }).length;
-  const spent = Number((SHEET.xp||{}).spent);
-  let line = L.length ? (L.length+" entr"+(L.length===1?"y":"ies")+" · "+logged+" XP logged") : "";
-  if(noCost) line += " · "+noCost+" with no cost recorded";
-  if(L.length && isFinite(spent)) line += " · the sheet says "+spent+" spent overall";
-  document.getElementById("xplogTotals").textContent = line;
+  const sx = SHEET.xp || {};
+  let cross = "";
+  if(isFinite(Number(sx.earned)) || isFinite(Number(sx.spent))){
+    const dE = isFinite(Number(sx.earned)) && Number(sx.earned)!==w.earned;
+    const dS = isFinite(Number(sx.spent))  && Number(sx.spent) !==w.spent;
+    cross = '<div class="hint" style="margin-top:3px;">The ST sheet says '+(sx.earned||0)+' earned · '+
+            (sx.spent||0)+' spent · '+(sx.banked||0)+' banked'+
+            ((dE||dS) ? ' — <b style="color:var(--oxblood);">that does not match your ledger</b>.' : ' — matches.')+'</div>';
+  }
+  document.getElementById("xplogTotals").innerHTML =
+    '<div class="walletline">'+w.earned+' earned &middot; '+w.spent+' spent &middot; <b>'+w.banked+' banked</b>'+
+    (L.length ? ' <span style="opacity:.7;">('+L.length+' entr'+(L.length===1?"y":"ies")+
+      (noCost ? ", "+noCost+" with no amount" : "")+')</span>' : '')+'</div>' + cross;
 }
 
 /* ====================== SHEET HISTORY (undo) ====================== */
@@ -1827,13 +2066,21 @@ document.addEventListener("click", function(e){
     const holder = t.closest("[data-dotref]"); if(!holder) return;
     const ref = holder.dataset.dotref;
     const v = parseInt(d.dot,10);
+    const cur = curRating(ref);
+
+    if(!UNLOCKED){
+      /* the gate: a dot only moves through the experience ledger */
+      if(v > cur) openBuyModal(ref, cur, v);
+      else if(v < cur) tryRefund(ref, cur, v);
+      return;
+    }
+    /* unlocked is for correcting the sheet, not for buying */
     if(ref.charAt(0)==="+"){
       const parts = ref.slice(1).split("|");
-      const cur = SLOT.edits.additions[parts[0]][parseInt(parts[1],10)];
-      cur.d = (cur.d===v) ? v-1 : v;
+      const it = SLOT.edits.additions[parts[0]][parseInt(parts[1],10)];
+      it.d = (it.d===v) ? v-1 : v;
       rebuild(); save();
     } else {
-      const cur = refRead(SHEET, ref)||0;
       setOverride(ref, (cur===v) ? v-1 : v);
       logChange("Edited "+ref+": "+cur+" → "+((cur===v)?v-1:v));
     }
@@ -1937,6 +2184,7 @@ document.addEventListener("focusout", function(e){
   if(el.dataset && (el.dataset.ref!==undefined || el.dataset.add!==undefined ||
                     el.dataset.inv!==undefined || el.dataset.xp!==undefined)) commitInput(el);
 });
+document.getElementById("xpmCost").addEventListener("input", paintWallet);
 document.getElementById("notes").addEventListener("blur", function(){
   if(SLOT.player.notes!==this.value){ SLOT.player.notes = this.value; save(); }
 });
