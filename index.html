@@ -143,6 +143,8 @@
   .statuschip{cursor:pointer; font-family:'Courier Prime', monospace; font-size:11.5px;
      border:1px solid var(--rule); padding:2px 7px; white-space:nowrap; user-select:none;}
   .statuschip.consumed,.statuschip.transferred{opacity:.55; text-decoration:line-through;}
+  td.xprun{font-family:'Courier Prime',monospace; font-size:12.5px; text-align:right;
+     color:var(--rule); white-space:nowrap;}
 
   /* ---------- edit affordances ---------- */
   .edited{ box-shadow:inset 2px 0 0 var(--tarnish); padding-left:5px; }
@@ -309,13 +311,16 @@
 
   <div class="band" id="band-xplog"><span class="bandtitle">EXPERIENCE LOG &mdash; DOTS PURCHASED</span>
     <div id="xplogTotals" class="hint" style="margin:0 0 6px;"></div>
-    <div style="overflow-x:auto;"><table class="inv" id="xplogtable">
-      <thead><tr><th style="width:74px">Session</th><th style="width:32%">Trait</th>
-      <th style="width:96px">Change</th><th style="width:64px">XP</th><th style="width:30px"></th></tr></thead>
+    <div style="overflow-x:auto;"><table class="inv" id="xplogtable" style="min-width:640px;">
+      <thead><tr><th style="width:80px">Write</th><th style="width:22%">Trait</th>
+      <th style="width:92px">Change</th><th style="width:52px">XP</th><th>Pricing / note</th>
+      <th style="width:56px">Running</th><th style="width:30px"></th></tr></thead>
       <tbody></tbody></table></div>
     <div class="iobtns" style="margin-top:8px;">
       <button class="quiet" onclick="addXpRow()">+ Add entry</button>
       <button class="quiet" onclick="scanXp()">Scan sheet notes</button>
+      <button class="quiet" id="xpOrderBtn" onclick="toggleXpOrder()">Oldest first</button>
+      <button class="quiet" onclick="exportXpLog()">Export log</button>
       <button class="quiet" onclick="clearXpLog()">Clear log</button>
     </div>
     <div class="hint">New dots are logged automatically whenever you load ST data. This log is yours &mdash; it survives a sheet reissue, and every field is editable.</div>
@@ -451,7 +456,7 @@ const LS_KEY = "vtm_sheets_v2";
 const HEALTH_LEVELS = [
   ["Bruised",""],["Hurt","-1"],["Injured","-1"],["Wounded","-2"],["Mauled","-2"],["Crippled","-5"],["Incapacitated",""]
 ];
-const APP_VERSION = "1.3.0";
+const APP_VERSION = "1.4.0";
 const APP_BUILD = "2026-08-29";
 const BLOOD_BOXES = 20;   /* fixed — not generation-scaled; the player manages the pool */
 const KNOWN_KEYS = ["schema","issuedBy","asOf","identity","attributes","abilities","disciplines","disciplineNote",
@@ -1345,30 +1350,57 @@ function addXpRow(){
     .push({ id:uid(), session:sessionTag(SHEET.asOf), trait:"", change:"", xp:"", note:"" });
   renderXpLog(); save();
 }
+function exportXpLog(){
+  document.getElementById("playerIO").value =
+    JSON.stringify({ __vtm:"xplog", entries: SLOT.player.xpLog||[] }, null, 1);
+  msg("playerMsg","Experience log written to the box — copy it out.", true);
+  jumpTo("ioSection");
+}
 function clearXpLog(){
   if(confirm("Clear the whole experience log for this character? It can be rebuilt from the ST's notes with Scan, but anything you typed by hand is gone."))
     { SLOT.player.xpLog = []; renderXpLog(); save(); logChange("XP log cleared"); }
 }
-function sortXpLog(L){
-  return L.slice().sort(function(a,b){
-    const na = parseInt(String(a.session).replace(/\D/g,""),10);
-    const nb = parseInt(String(b.session).replace(/\D/g,""),10);
-    if(isFinite(na) && isFinite(nb) && na!==nb) return nb-na;   /* newest session first */
-    return String(b.session).localeCompare(String(a.session));
+/* First number in the tag orders it — "S19–S28" sorts as 19, not 1928. */
+function sessNum(s){ const m = String(s||"").match(/(\d+)/); return m ? parseInt(m[1],10) : Infinity; }
+/* Chronological order, each row carrying the running total at that point.
+   The running figure is computed in write order whichever way the table is shown. */
+function xpRows(){
+  const L = SLOT.player.xpLog || [];
+  const asc = L.map(function(e,i){ return {e:e, i:i}; })
+    .sort(function(a,b){
+      const na = sessNum(a.e.session), nb = sessNum(b.e.session);
+      return (na!==nb) ? na-nb : a.i-b.i;
+    })
+    .map(function(x){ return x.e; });
+  let run = 0;
+  const out = asc.map(function(e){
+    const v = parseInt(e.xp,10);
+    if(isFinite(v)) run += v;
+    return { e:e, run:run };
   });
+  return (SLOT.player.xpAsc === false) ? out.slice().reverse() : out;
+}
+function toggleXpOrder(){
+  SLOT.player.xpAsc = (SLOT.player.xpAsc === false);
+  renderXpLog(); save();
 }
 function renderXpLog(){
   const L = SLOT.player.xpLog || [];
-  const rows = sortXpLog(L);
+  const rows = xpRows();
   document.querySelector("#xplogtable tbody").innerHTML = rows.length
-    ? rows.map(function(e){
+    ? rows.map(function(r){
+        const e = r.e;
         return '<tr><td><input type="text" value="'+attr(e.session)+'" data-xp="'+attr(e.id)+'" data-f="session"></td>'+
           '<td><input type="text" value="'+attr(e.trait)+'" data-xp="'+attr(e.id)+'" data-f="trait" placeholder="trait"></td>'+
           '<td><input type="text" value="'+attr(e.change)+'" data-xp="'+attr(e.id)+'" data-f="change" placeholder="2→3"></td>'+
           '<td><input type="text" value="'+attr(e.xp)+'" data-xp="'+attr(e.id)+'" data-f="xp" placeholder="—"></td>'+
+          '<td><input type="text" value="'+attr(e.note||"")+'" data-xp="'+attr(e.id)+'" data-f="note" placeholder="pricing / why"></td>'+
+          '<td class="xprun">'+r.run+'</td>'+
           '<td><button class="quiet tiny" data-xpdel="'+attr(e.id)+'">×</button></td></tr>';
       }).join("")
-    : '<tr><td colspan="5" class="hint">No entries yet. Load ST data and new dots land here, or press <b>Scan sheet notes</b> to read the purchases the ST already wrote into this sheet.</td></tr>';
+    : '<tr><td colspan="7" class="hint">No entries yet. Load ST data and new dots land here, or press <b>Scan sheet notes</b> to read the purchases the ST already wrote into this sheet.</td></tr>';
+  const btn = document.getElementById("xpOrderBtn");
+  if(btn) btn.textContent = (SLOT.player.xpAsc === false) ? "Newest first" : "Oldest first";
 
   const logged = L.reduce(function(sum,e){ const v = parseInt(e.xp,10); return sum + (isFinite(v)?v:0); }, 0);
   const noCost = L.filter(function(e){ return !isFinite(parseInt(e.xp,10)); }).length;
@@ -1726,13 +1758,36 @@ function importBlock(){
     DB.slots.push(s); DB.active = s.id; save(); boot(false);
     msg("playerMsg","Slot imported as “"+s.name+"” and made active.", true); return;
   }
+  if(obj && obj.__vtm==="xplog" && isArr(obj.entries)){
+    const incoming = obj.entries.map(function(e){
+      return { id: e.id || uid(), session: String(e.session==null?"":e.session),
+               trait: String(e.trait==null?"":e.trait), change: String(e.change==null?"":e.change),
+               xp: (e.xp==null?"":String(e.xp)), note: String(e.note==null?"":e.note) };
+    });
+    const had = (SLOT.player.xpLog||[]).length;
+    let how;
+    if(had){
+      how = confirm("Replace the "+had+" entr"+(had===1?"y":"ies")+" already in this character's log with the "+
+                    incoming.length+" in this block?\n\nOK replaces. Cancel adds them alongside, skipping exact duplicates.")
+            ? "replace" : "append";
+    } else how = "replace";
+    let n;
+    if(how==="replace"){ SLOT.player.xpLog = incoming; n = incoming.length; }
+    else { n = addXpEntries(incoming); }
+    renderXpLog(); save();
+    logChange("Experience log imported: "+n+" entr"+(n===1?"y":"ies")+" ("+how+")");
+    msg("playerMsg","Experience log "+(how==="replace"?"replaced with":"extended by")+" "+n+" entr"+(n===1?"y":"ies")+".", true);
+    document.getElementById("playerIO").value = "";
+    jumpTo("band-xplog");
+    return;
+  }
   /* legacy: a bare player-layer block from the old single-character sheet */
   if(obj && typeof obj==="object" && ("notes" in obj || "inventory" in obj || "log" in obj)){
     SLOT.player = Object.assign(blankPlayer(), obj);
     rebuild(); save();
     msg("playerMsg","Legacy player layer restored into this slot.", true); return;
   }
-  msg("playerMsg","Didn’t recognise that block. Expecting a slot export, a full backup, or an old player-layer block.", false);
+  msg("playerMsg","Didn’t recognise that block. Expecting a slot export, a full backup, an experience-log block, or an old player-layer block.", false);
 }
 function downloadAll(){
   const d=new Date(); const p=x=>String(x).padStart(2,"0");

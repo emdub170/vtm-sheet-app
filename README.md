@@ -133,6 +133,15 @@ three ways:
   sheet (`"raised 2→3 at S41, 8 XP"`, `"new at S41, 3 XP"`). Use it once to seed the log
   from a sheet you've already loaded. Running it twice adds nothing.
 - **By hand** — every field is an editable text box, and `+ Add entry` makes a blank row.
+- **By import** — paste a block shaped `{"__vtm":"xplog","entries":[...]}` into the
+  right-hand box in the Data panel and press **Import block**. It asks whether to replace
+  the existing log or add alongside it, skipping exact duplicates. **Export log** writes
+  the current log back out in the same shape, which is how you move it between devices.
+
+Columns are Write, Trait, Change, XP, Pricing/note, and a Running total. Rows sort by the
+first session number in the Write tag, so a banded tag like `S19-S28` files under 19.
+**Oldest first / Newest first** flips the display; the running total is always computed in
+write order, so the last chronological row is the true total either way.
 
 It lives in the player layer, so it survives a sheet reissue. The totals line shows what
 you've logged against what the sheet claims was spent overall, so a gap is visible
