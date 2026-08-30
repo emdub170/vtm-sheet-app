@@ -121,6 +121,27 @@ The **Slots** button holds as many characters as you want, PC or NPC, each with 
 sheet, edits, and player layer. Sparse sheets render clean — an NPC with three traits
 and a note shows three traits and a note, not a page of empty boxes.
 
+### Experience log
+
+A ledger of when each dot was bought, sitting under Merits & Flaws. It fills itself
+three ways:
+
+- **Automatically**, every time you load ST data — any rating that went up is recorded
+  with the session tag, the change, and the XP cost if the ST wrote one in that trait's
+  note.
+- **Scan sheet notes**, which reads purchases the ST already spelled out in the current
+  sheet (`"raised 2→3 at S41, 8 XP"`, `"new at S41, 3 XP"`). Use it once to seed the log
+  from a sheet you've already loaded. Running it twice adds nothing.
+- **By hand** — every field is an editable text box, and `+ Add entry` makes a blank row.
+
+It lives in the player layer, so it survives a sheet reissue. The totals line shows what
+you've logged against what the sheet claims was spent overall, so a gap is visible
+without anything being computed for you. Vinculum is excluded on purpose — those dots
+aren't bought.
+
+One wrinkle: entries captured by a paste are not removed if you then undo that paste
+from **Undo / history**. Delete them by hand if you back one out.
+
 ### Blood
 
 Twenty checkboxes, fixed — the app does not scale the pool to generation. Tap a box to

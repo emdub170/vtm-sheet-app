@@ -307,6 +307,20 @@
     <div class="band" id="band-xp"><span class="bandtitle">EXPERIENCE</span><div id="xp"></div></div>
   </div>
 
+  <div class="band" id="band-xplog"><span class="bandtitle">EXPERIENCE LOG &mdash; DOTS PURCHASED</span>
+    <div id="xplogTotals" class="hint" style="margin:0 0 6px;"></div>
+    <div style="overflow-x:auto;"><table class="inv" id="xplogtable">
+      <thead><tr><th style="width:74px">Session</th><th style="width:32%">Trait</th>
+      <th style="width:96px">Change</th><th style="width:64px">XP</th><th style="width:30px"></th></tr></thead>
+      <tbody></tbody></table></div>
+    <div class="iobtns" style="margin-top:8px;">
+      <button class="quiet" onclick="addXpRow()">+ Add entry</button>
+      <button class="quiet" onclick="scanXp()">Scan sheet notes</button>
+      <button class="quiet" onclick="clearXpLog()">Clear log</button>
+    </div>
+    <div class="hint">New dots are logged automatically whenever you load ST data. This log is yours &mdash; it survives a sheet reissue, and every field is editable.</div>
+  </div>
+
   <div id="sec-chronicle">
     <h2>Chronicle</h2>
     <div class="cols2">
@@ -437,7 +451,7 @@ const LS_KEY = "vtm_sheets_v2";
 const HEALTH_LEVELS = [
   ["Bruised",""],["Hurt","-1"],["Injured","-1"],["Wounded","-2"],["Mauled","-2"],["Crippled","-5"],["Incapacitated",""]
 ];
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.3.0";
 const APP_BUILD = "2026-08-29";
 const BLOOD_BOXES = 20;   /* fixed — not generation-scaled; the player manages the pool */
 const KNOWN_KEYS = ["schema","issuedBy","asOf","identity","attributes","abilities","disciplines","disciplineNote",
@@ -469,7 +483,7 @@ function blankEdits(){ return { overrides:[], additions:{}, hidden:[] }; }
 function blankPlayer(){
   return { showZeroAbilities:false, wpTemp:null, health:[0,0,0,0,0,0,0],
            blood:0, notes:"", inventory:[],
-           materielMarks:{}, log:[], rolls:[], dicePool:6, difficulty:6 };
+           materielMarks:{}, log:[], rolls:[], xpLog:[], dicePool:6, difficulty:6 };
 }
 function newSlotObj(kind, name){
   return { id:"s"+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4),
@@ -1048,6 +1062,7 @@ function renderSheet(){
   renderXP();
   show("band-xp", has(SHEET.xp) || UNLOCKED);
   show("sec-mfxp", mfCount || has(SHEET.xp) || UNLOCKED);
+  renderXpLog();
 
   /* Vinculum + bond/anchor */
   const vinc = SHEET.vinculum||[];
@@ -1255,6 +1270,113 @@ function openSlotMenu(){
       '</span></div><div class="hint">'+esc(sub)+'</div></div>';
   }).join("");
   openModal("slotModal");
+}
+
+/* ====================== EXPERIENCE LOG ======================
+   Every rated trait on the sheet, flattened to one name -> trait map.
+   Vinculum is deliberately absent — those dots are not bought. */
+function traitMapAll(s){
+  const out = {};
+  function add(arr){ (arr||[]).forEach(function(t){ if(t && t.n) out[t.n] = t; }); }
+  for(const g in (s.attributes||{})) add(s.attributes[g]);
+  for(const g in (s.abilities||{}))  add(s.abilities[g]);
+  add(s.backgrounds); add(s.virtues);
+  (s.disciplines||[]).forEach(function(d){
+    if(d && d.state !== "redacted" && d.label) out[d.label] = { n:d.label, d:d.d, note:d.note };
+  });
+  return out;
+}
+function uid(){ return "x"+Math.random().toString(36).slice(2,9); }
+function sessionTag(asOf){
+  const m = String(asOf||"").match(/\bS(\d+)\b/);
+  return m ? ("S"+m[1]) : String(asOf||"").slice(0,10);
+}
+function parseXpCost(note){ const m = String(note||"").match(/(\d+)\s*XP/i); return m ? m[1] : ""; }
+function xpKey(e){ return (e.session||"")+"|"+(e.trait||"")+"|"+(e.change||""); }
+function addXpEntries(entries){
+  const L = SLOT.player.xpLog || (SLOT.player.xpLog = []);
+  const seen = {}; L.forEach(function(e){ seen[xpKey(e)] = true; });
+  let n = 0;
+  entries.forEach(function(e){ if(!seen[xpKey(e)]){ seen[xpKey(e)] = true; L.push(e); n++; } });
+  return n;
+}
+/* Ratings that went up between two sheets. */
+function captureXpPurchases(oldS, newS){
+  const a = traitMapAll(oldS||{}), b = traitMapAll(newS||{});
+  const sess = sessionTag(newS.asOf);
+  const out = [];
+  Object.keys(b).forEach(function(n){
+    const to = Number(b[n].d)||0;
+    const known = (n in a);
+    const from = known ? (Number(a[n].d)||0) : 0;
+    if(to <= from) return;
+    out.push({ id:uid(), session:sess, trait:n,
+               change: known ? (from+"→"+to) : ("new at "+to),
+               xp: parseXpCost(b[n].note), note:"" });
+  });
+  return out;
+}
+/* Purchases the ST spelled out in a trait's own note. */
+function scanForPurchases(s){
+  const map = traitMapAll(s||{}), fallback = sessionTag(s.asOf), out = [];
+  Object.keys(map).forEach(function(n){
+    const note = String(map[n].note||"");
+    let change = "";
+    const raised = note.match(/rais(?:ed)?\s*(\d+)\s*(?:→|->|to)\s*(\d+)/i);
+    if(raised) change = raised[1]+"→"+raised[2];
+    else if(/\bnew at\b/i.test(note)) change = "new at "+(Number(map[n].d)||0);
+    if(!change) return;
+    const tag = note.match(/\bat\s+S(\d+)\b/i) || note.match(/\bS(\d+)\b/);
+    out.push({ id:uid(), session: tag ? ("S"+tag[1]) : fallback, trait:n,
+               change:change, xp:parseXpCost(note), note:"" });
+  });
+  return out;
+}
+function scanXp(){
+  const found = scanForPurchases(SHEET);
+  if(!found.length){ toast("Nothing in the sheet notes reads as a purchase."); return; }
+  const added = addXpEntries(found);
+  renderXpLog(); save();
+  if(added){ logChange("XP log: scanned sheet notes, added "+added+" entr"+(added===1?"y":"ies")); toast("Added "+added+"."); }
+  else toast("All "+found.length+" already logged.");
+}
+function addXpRow(){
+  (SLOT.player.xpLog || (SLOT.player.xpLog = []))
+    .push({ id:uid(), session:sessionTag(SHEET.asOf), trait:"", change:"", xp:"", note:"" });
+  renderXpLog(); save();
+}
+function clearXpLog(){
+  if(confirm("Clear the whole experience log for this character? It can be rebuilt from the ST's notes with Scan, but anything you typed by hand is gone."))
+    { SLOT.player.xpLog = []; renderXpLog(); save(); logChange("XP log cleared"); }
+}
+function sortXpLog(L){
+  return L.slice().sort(function(a,b){
+    const na = parseInt(String(a.session).replace(/\D/g,""),10);
+    const nb = parseInt(String(b.session).replace(/\D/g,""),10);
+    if(isFinite(na) && isFinite(nb) && na!==nb) return nb-na;   /* newest session first */
+    return String(b.session).localeCompare(String(a.session));
+  });
+}
+function renderXpLog(){
+  const L = SLOT.player.xpLog || [];
+  const rows = sortXpLog(L);
+  document.querySelector("#xplogtable tbody").innerHTML = rows.length
+    ? rows.map(function(e){
+        return '<tr><td><input type="text" value="'+attr(e.session)+'" data-xp="'+attr(e.id)+'" data-f="session"></td>'+
+          '<td><input type="text" value="'+attr(e.trait)+'" data-xp="'+attr(e.id)+'" data-f="trait" placeholder="trait"></td>'+
+          '<td><input type="text" value="'+attr(e.change)+'" data-xp="'+attr(e.id)+'" data-f="change" placeholder="2→3"></td>'+
+          '<td><input type="text" value="'+attr(e.xp)+'" data-xp="'+attr(e.id)+'" data-f="xp" placeholder="—"></td>'+
+          '<td><button class="quiet tiny" data-xpdel="'+attr(e.id)+'">×</button></td></tr>';
+      }).join("")
+    : '<tr><td colspan="5" class="hint">No entries yet. Load ST data and new dots land here, or press <b>Scan sheet notes</b> to read the purchases the ST already wrote into this sheet.</td></tr>';
+
+  const logged = L.reduce(function(sum,e){ const v = parseInt(e.xp,10); return sum + (isFinite(v)?v:0); }, 0);
+  const noCost = L.filter(function(e){ return !isFinite(parseInt(e.xp,10)); }).length;
+  const spent = Number((SHEET.xp||{}).spent);
+  let line = L.length ? (L.length+" entr"+(L.length===1?"y":"ies")+" · "+logged+" XP logged") : "";
+  if(noCost) line += " · "+noCost+" with no cost recorded";
+  if(L.length && isFinite(spent)) line += " · the sheet says "+spent+" spent overall";
+  document.getElementById("xplogTotals").textContent = line;
 }
 
 /* ====================== SHEET HISTORY (undo) ====================== */
@@ -1556,6 +1678,9 @@ function commitReview(){
   const oldPerm = Number(oldS.willpowerPerm)||0, newPerm = Number(merged.willpowerPerm)||0;
   if(newPerm > oldPerm && SLOT.player.wpTemp === oldPerm) SLOT.player.wpTemp = newPerm;
 
+  /* every dot that went up, into the experience log */
+  const bought = addXpEntries(captureXpPurchases(oldS, merged));
+
   /* re-anchor your edits against the sheet that actually landed */
   const dropped = reanchorEdits(merged);
 
@@ -1564,6 +1689,7 @@ function commitReview(){
   rebuild(); save();
   const parts = ["Sheet data loaded: "+(newS.asOf||"no as-of line")];
   if(kept.length) parts.push("kept mine in: "+kept.join(", "));
+  if(bought) parts.push(bought+" new dot"+(bought===1?"":"s")+" logged to experience");
   if(dropped.length) parts.push(dropped.length+" of your edits dropped (field gone)");
   logChange(parts.join(" · "));
   msg("sheetMsg", parts.join(" · "), true);
@@ -1619,7 +1745,7 @@ function downloadAll(){
   msg("playerMsg","Downloaded "+fname, true);
 }
 function resetPlayerLayer(){
-  if(confirm("Reset this character’s player layer — notes, inventory, trackers, rolls, log? The ST sheet and your sheet edits stay.")){
+  if(confirm("Reset this character’s player layer — notes, inventory, trackers, rolls, change log AND the experience log? The ST sheet and your sheet edits stay.")){
     SLOT.player = blankPlayer(); rebuild(); save();
     msg("playerMsg","Player layer reset.", true);
   }
@@ -1638,7 +1764,7 @@ function toggleLock(){
 
 /* ====================== EVENT DELEGATION ====================== */
 document.addEventListener("click", function(e){
-  const t = e.target.closest ? e.target.closest("[data-dot],[data-hide],[data-revert],[data-addto],[data-deladd],[data-mat],[data-wp],[data-blood],[data-health],[data-pool],[data-choice],[data-invstatus],[data-invdel],[data-histrestore],[data-slotopen],[data-slotrename],[data-slotdel],[data-slotdup],[data-slotkind]") : null;
+  const t = e.target.closest ? e.target.closest("[data-dot],[data-hide],[data-revert],[data-addto],[data-deladd],[data-mat],[data-wp],[data-blood],[data-health],[data-pool],[data-choice],[data-invstatus],[data-invdel],[data-xpdel],[data-histrestore],[data-slotopen],[data-slotrename],[data-slotdel],[data-slotdup],[data-slotkind]") : null;
   if(!t) return;
   const d = t.dataset;
 
@@ -1677,6 +1803,13 @@ document.addEventListener("click", function(e){
     const i=parseInt(d.invdel,10), it=SLOT.player.inventory[i];
     if(confirm("Remove “"+(it.n||"item")+"”?")){
       SLOT.player.inventory.splice(i,1); logChange("Inventory removed: "+(it.n||"item")); renderInventory(); }
+    return;
+  }
+  if(d.xpdel!==undefined){
+    const e = (SLOT.player.xpLog||[]).filter(x=>x.id===d.xpdel)[0];
+    if(e && confirm("Remove “"+(e.trait||"entry")+" "+(e.change||"")+"” from the experience log?")){
+      SLOT.player.xpLog = SLOT.player.xpLog.filter(x=>x.id!==d.xpdel);
+      renderXpLog(); save(); }
     return;
   }
   if(d.histrestore!==undefined){ restoreHistory(parseInt(d.histrestore,10)); return; }
@@ -1724,6 +1857,13 @@ function commitInput(el){
     else editAdd(d.add, i, d.f, el.value);
     return;
   }
+  if(d.xp!==undefined){
+    const e = (SLOT.player.xpLog||[]).filter(x=>x.id===d.xp)[0];
+    if(!e || e[d.f]===el.value) return;
+    e[d.f] = el.value;
+    renderXpLog(); save();
+    return;
+  }
   if(d.inv!==undefined){
     const i = parseInt(d.inv,10), it = SLOT.player.inventory[i];
     if(!it || it[d.f]===el.value) return;
@@ -1739,7 +1879,8 @@ document.addEventListener("change", function(e){
 });
 document.addEventListener("focusout", function(e){
   const el = e.target;
-  if(el.dataset && (el.dataset.ref!==undefined || el.dataset.add!==undefined || el.dataset.inv!==undefined)) commitInput(el);
+  if(el.dataset && (el.dataset.ref!==undefined || el.dataset.add!==undefined ||
+                    el.dataset.inv!==undefined || el.dataset.xp!==undefined)) commitInput(el);
 });
 document.getElementById("notes").addEventListener("blur", function(){
   if(SLOT.player.notes!==this.value){ SLOT.player.notes = this.value; save(); }
