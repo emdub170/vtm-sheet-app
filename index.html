@@ -488,7 +488,7 @@ const LS_KEY = "vtm_sheets_v2";
 const HEALTH_LEVELS = [
   ["Bruised",""],["Hurt","-1"],["Injured","-1"],["Wounded","-2"],["Mauled","-2"],["Crippled","-5"],["Incapacitated",""]
 ];
-const APP_VERSION = "1.5.0";
+const APP_VERSION = "1.5.1";
 const APP_BUILD = "2026-08-29";
 const BLOOD_BOXES = 20;   /* fixed — not generation-scaled; the player manages the pool */
 const KNOWN_KEYS = ["schema","issuedBy","asOf","identity","attributes","abilities","disciplines","disciplineNote",
@@ -1440,7 +1440,14 @@ function paintWallet(){
     (isFinite(cost) ? ' &nbsp;&rarr;&nbsp; <b>'+after+' banked</b> after this' : '')+'</div>';
   const warn = document.getElementById("xpmWarn");
   if(XPM && XPM.mode==="buy" && isFinite(cost) && cost > w.banked){
-    warn.textContent = "That costs "+cost+" and you have "+w.banked+" banked. Add the award first, or lower the price.";
+    const stEarned = Number((SHEET.xp||{}).earned);
+    warn.innerHTML = (w.earned === 0)
+      ? "You have no awards logged, so there is nothing in the bank to spend — "+w.spent+
+        " spent against 0 earned." +
+        (isFinite(stEarned) && stEarned > 0
+          ? ' <button class="quiet tiny" onclick="seedEarned('+stEarned+'); paintWallet();">Add the ST&rsquo;s '+stEarned+' earned</button>'
+          : ' Close this and use <b>+ Add XP</b> first.')
+      : "That costs "+cost+" and you have "+w.banked+" banked. Short by "+(cost-w.banked)+".";
     warn.style.display = "";
     document.getElementById("xpmGo").disabled = true;
   } else {
@@ -1574,6 +1581,17 @@ function scanXp(){
   if(added){ logChange("XP log: scanned sheet notes, added "+added+" entr"+(added===1?"y":"ies")); toast("Added "+added+"."); }
   else toast("All "+found.length+" already logged.");
 }
+function seedEarned(n){
+  const amt = parseInt(n,10);
+  if(!isFinite(amt) || amt <= 0) return;
+  const sess = sessionTag(SHEET.asOf);
+  (SLOT.player.xpLog || (SLOT.player.xpLog = [])).unshift({
+    id:uid(), kind:"award", session:sess, trait:"Award", change:"",
+    xp:String(amt), note:"Awarded through "+sess+", per the ST sheet" });
+  renderXpLog(); save();
+  logChange("XP award +"+amt+" (seeded from the ST sheet)");
+  toast("+"+amt+" XP. Banked "+xpWallet().banked+".");
+}
 function addXpRow(){
   (SLOT.player.xpLog || (SLOT.player.xpLog = []))
     .push({ id:uid(), session:sessionTag(SHEET.asOf), trait:"", change:"", xp:"", note:"" });
@@ -1638,16 +1656,35 @@ function renderXpLog(){
   const sx = SHEET.xp || {};
   let cross = "";
   if(isFinite(Number(sx.earned)) || isFinite(Number(sx.spent))){
-    const dE = isFinite(Number(sx.earned)) && Number(sx.earned)!==w.earned;
-    const dS = isFinite(Number(sx.spent))  && Number(sx.spent) !==w.spent;
-    cross = '<div class="hint" style="margin-top:3px;">The ST sheet says '+(sx.earned||0)+' earned · '+
-            (sx.spent||0)+' spent · '+(sx.banked||0)+' banked'+
-            ((dE||dS) ? ' — <b style="color:var(--oxblood);">that does not match your ledger</b>.' : ' — matches.')+'</div>';
+    const se = Number(sx.earned)||0, ss = Number(sx.spent)||0;
+    let verdict;
+    if(se === w.earned && ss === w.spent) verdict = " — matches.";
+    else if(se === w.earned && w.spent > ss)
+      verdict = " — you have spent <b>"+(w.spent-ss)+"</b> more since it was issued, which is expected.";
+    else if(se === w.earned && w.spent < ss)
+      verdict = ' — your ledger is <b style="color:var(--oxblood);">'+(ss-w.spent)+
+                ' short on spends</b>; some purchases are missing from it.';
+    else
+      verdict = ' — <b style="color:var(--oxblood);">earned does not match</b> ('+se+' there, '+w.earned+' here).';
+    cross = '<div class="hint" style="margin-top:3px;">The ST sheet says '+se+' earned · '+
+            ss+' spent · '+(sx.banked||0)+' banked'+verdict+'</div>';
+  }
+  /* Spends with no awards behind them is not a balance, it's a missing figure. */
+  let seed = "";
+  if(w.earned === 0 && w.spent > 0){
+    const stEarned = Number((SHEET.xp||{}).earned);
+    seed = '<div class="conflict" style="margin-top:6px;">'+
+      'Nothing has been awarded yet, so every spend is coming out of an empty bank and purchases are blocked. '+
+      'Add what the ST has awarded you over the chronicle.'+
+      (isFinite(stEarned) && stEarned > 0
+        ? ' <button class="quiet tiny" onclick="seedEarned('+stEarned+')">Add the ST&rsquo;s '+stEarned+' earned</button>'
+        : ' Use <b>+ Add XP</b>.')+
+      '</div>';
   }
   document.getElementById("xplogTotals").innerHTML =
     '<div class="walletline">'+w.earned+' earned &middot; '+w.spent+' spent &middot; <b>'+w.banked+' banked</b>'+
     (L.length ? ' <span style="opacity:.7;">('+L.length+' entr'+(L.length===1?"y":"ies")+
-      (noCost ? ", "+noCost+" with no amount" : "")+')</span>' : '')+'</div>' + cross;
+      (noCost ? ", "+noCost+" with no amount" : "")+')</span>' : '')+'</div>' + seed + cross;
 }
 
 /* ====================== SHEET HISTORY (undo) ====================== */

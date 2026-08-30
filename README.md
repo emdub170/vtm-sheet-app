@@ -159,7 +159,13 @@ purchase.
 Unlocking the sheet still edits dots freely. That mode is for correcting ST data and
 deliberately bypasses the gate, so it does not touch the ledger.
 
-`+ Add XP` records an award.
+`+ Add XP` records an award. An imported ledger is all spends, so until an award is
+logged the bank sits negative and every purchase is blocked — when that happens the
+Experience box says so and offers a one-tap button to add the ST sheet's earned figure.
+
+The cross-check against the ST's `xp` block distinguishes the ordinary case from a real
+problem: spending more than the sheet knows about is expected once you buy something,
+while a mismatch in *earned*, or a ledger short on spends, is called out in red.
 
 Columns are Write, Trait, Change, XP, Pricing/note, and a running banked balance. Rows sort by the
 first session number in the Write tag, so a banded tag like `S19-S28` files under 19.
