@@ -121,6 +121,13 @@ The **Slots** button holds as many characters as you want, PC or NPC, each with 
 sheet, edits, and player layer. Sparse sheets render clean — an NPC with three traits
 and a note shows three traits and a note, not a page of empty boxes.
 
+### Built-in sheets (v1.6.0)
+
+On first open after the update the app adds two slots: **MJD** (the old chronicle's
+Mitch as of S58) and **Mitch** (the new chronicle's session-zero draft). If the device
+already holds the old Mitch, that slot is renamed MJD and keeps all its data. This
+happens once per device; deleting either slot afterwards sticks.
+
 ### Experience log
 
 A ledger of when each dot was bought, sitting under Merits & Flaws. It fills itself

@@ -488,8 +488,8 @@ const LS_KEY = "vtm_sheets_v2";
 const HEALTH_LEVELS = [
   ["Bruised",""],["Hurt","-1"],["Injured","-1"],["Wounded","-2"],["Mauled","-2"],["Crippled","-5"],["Incapacitated",""]
 ];
-const APP_VERSION = "1.5.1";
-const APP_BUILD = "2026-08-29";
+const APP_VERSION = "1.6.0";
+const APP_BUILD = "2026-11-17";
 const BLOOD_BOXES = 20;   /* fixed — not generation-scaled; the player manages the pool */
 const KNOWN_KEYS = ["schema","issuedBy","asOf","identity","attributes","abilities","disciplines","disciplineNote",
   "backgrounds","virtues","humanity","willpowerPerm","bloodNote","meritsFlaws","xp","vinculum","vinculumNote",
@@ -530,6 +530,60 @@ function newSlotObj(kind, name){
 function blankDB(){
   const s = newSlotObj("PC","New character");
   return { version:2, active:s.id, slots:[s] };
+}
+
+/* ====================== BUILT-IN SHEETS (v1.6.0) ======================
+   Seeded once per device. The old chronicle's Mitch is titled "MJD"; the new
+   chronicle's Mitch is titled "Mitch". An existing Mitch slot is renamed, never replaced. */
+const SEED_MJD = {
+  asOf:"S58 close — old chronicle, closed",
+  identity:{name:"Mitchell James Daniels", nature:"Soldier", demeanor:"Perfectionist", clan:"Lasombra",
+            generation:"10th", sire:"Serrano", chronicle:"MJD (closed)"},
+  attributes:{Strength:2, Dexterity:3, Stamina:3,
+              Charisma:{rating:4, specialty:"Sincerity"}, Manipulation:3, Appearance:3,
+              Perception:{rating:4, specialty:"Scan Pattern"}, Intelligence:3, Wits:{rating:4, specialty:"Reading the Room"}},
+  abilities:{
+    Talents:{Alertness:3, Athletics:3, Awareness:1, Brawl:3, Empathy:{rating:5, specialty:"What It Costs Them"},
+             Intimidation:1, Leadership:{rating:4, specialty:"Under Load"}, Streetwise:3,
+             Subterfuge:{rating:5, specialty:"Smooth Talking"}},
+    Skills:{Pilot:3, Drive:3, Etiquette:2, Firearms:3, Stealth:2, Survival:2},
+    Knowledges:{Academics:1, Investigation:2, "Linguistics (Spanish)":1, Medicine:2, Science:1, Technology:1}},
+  disciplines:[{label:"Dominate", d:1}, {label:"Obtenebration", d:2}, {state:"redacted", label:"", d:1}],
+  backgrounds:{Resources:2, Contacts:1},
+  virtues:{Conscience:3, "Self-Control":4, Courage:4},
+  humanity:7, willpowerPerm:9, bloodNote:"Pool 13, 1 per turn (10th generation).",
+  meritsFlaws:{merits:["Calm Heart","Time Sense"], flaws:["Ward — Courtney","Enemy — Rebekah / custody","Overconfident"]}
+};
+const SEED_MITCH = {
+  asOf:"Session zero draft — new chronicle",
+  identity:{name:"Mitch Daniels", clan:"Lasombra", generation:"11th", chronicle:"Mitch",
+            concept:"Airline first officer, Guard captain, newly Embraced"},
+  attributes:{Strength:2, Dexterity:3, Stamina:3, Charisma:3, Manipulation:2, Appearance:2,
+              Perception:4, Intelligence:3, Wits:3},
+  abilities:{
+    Talents:{Alertness:3, Athletics:2, Brawl:2, Intimidation:1, Leadership:3},
+    Skills:{Drive:2, Etiquette:1, Firearms:3, Melee:1, Pilot:3, Stealth:1, Survival:2},
+    Knowledges:{Academics:1, Computer:1, Medicine:1, Science:1, Technology:1}},
+  disciplines:[{label:"Dominate", d:1}, {label:"Obtenebration", d:1}, {label:"Potence", d:1}],
+  backgrounds:{Generation:2, Resources:2, Contacts:1},
+  virtues:{Conscience:3, "Self-Control":3, Courage:4},
+  humanity:7, willpowerPerm:8, bloodNote:"Pool 12, 1 per turn (11th generation)."
+};
+function seedSlot(name, raw){
+  const s = newSlotObj("PC", name); s.sheet = normalizeSheet(raw); return s;
+}
+function seedBuiltins(){
+  if(DB.seed16) return false;
+  DB.slots = DB.slots.filter(function(s){ return has(s.sheet) || s.name!=="New character"; });
+  const old = DB.slots.filter(function(s){
+    const nm = (s.sheet && s.sheet.identity && s.sheet.identity.name) || "";
+    return /daniels/i.test(nm) || /mitch|mjd/i.test(s.name||""); })[0];
+  if(old) old.name = "MJD"; else DB.slots.push(seedSlot("MJD", SEED_MJD));
+  const fresh = seedSlot("Mitch", SEED_MITCH);
+  DB.slots.push(fresh);
+  if(!DB.slots.some(function(s){ return s.id===DB.active; })) DB.active = fresh.id;
+  DB.seed16 = true;
+  return true;
 }
 
 /* ====================== HELPERS ====================== */
@@ -2247,7 +2301,9 @@ function boot(first){
     "APP v"+APP_VERSION+" · "+APP_BUILD;
 }
 load();
+const SEEDED = seedBuiltins();
 boot(true);
+if(SEEDED) save();
 
 /* ====================== SERVICE WORKER ====================== */
 if("serviceWorker" in navigator){
