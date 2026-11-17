@@ -1,6 +1,6 @@
 /* V20 Sheet — offline shell.
    Bump CACHE when index.html changes so devices pick up the new version. */
-const CACHE = "vtm-sheet-v2";
+const CACHE = "vtm-sheet-v4";
 const SHELL = [
   "./",
   "./index.html",
