@@ -34,9 +34,14 @@ textarea{ width:100%; border:1px solid var(--line); border-radius:4px; padding:8
 .idgrid label{ font-size:11px; color:var(--mute); letter-spacing:.08em; text-transform:uppercase; display:flex; flex-direction:column; }
 .cols{ display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:0 16px; }
 .row{ display:flex; align-items:center; gap:6px; padding:3px 0; }
-.row .nm{ flex:0 0 96px; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.row input.nm{ flex:0 0 96px; }
-.row .sp{ flex:1; font-size:12px; font-style:italic; }
+.row .nm{ flex:1; min-width:0; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.row input.nm{ flex:1; }
+button.nm{ font:inherit; font-size:14px; text-align:left; background:none; border:none; padding:2px 0; color:var(--ink); cursor:pointer; }
+button.nm.has{ text-decoration:underline dotted var(--mute); text-underline-offset:3px; }
+button.nm .ph{ color:var(--mute); font-style:italic; }
+.spline{ display:flex; gap:6px; padding:0 0 6px 10px; border-left:2px solid var(--line); margin:0 0 4px 2px; }
+.spline input{ flex:1; font-size:13px; font-style:italic; }
+.spline input.spn{ flex:0 0 40%; font-style:normal; }
 .dots{ display:flex; gap:3px; flex:none; }
 .dot{ width:17px; height:17px; border-radius:50%; border:1.5px solid var(--ink); background:transparent; padding:0; }
 .dot.on{ background:var(--ink); }
@@ -77,7 +82,7 @@ textarea{ width:100%; border:1px solid var(--line); border-radius:4px; padding:8
 <main id="app"></main>
 <script>
 "use strict";
-const APP_VERSION = "2.0.0", APP_BUILD = "2026-11-17";
+const APP_VERSION = "2.1.0", APP_BUILD = "2026-11-18";
 const KEY = "v20_simple_v1", OLD_KEY = "vtm_sheets_v2";
 const ATTRS = {Physical:["Strength","Dexterity","Stamina"], Social:["Charisma","Manipulation","Appearance"], Mental:["Perception","Intelligence","Wits"]};
 const ROSTER = {
@@ -109,6 +114,7 @@ const SEEDS = {
 };
 
 let DB, S, LOCK = false;
+const OPEN = new Set();   /* which specialty lines are open; view only, not saved */
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
 const uid = () => "c"+Math.random().toString(36).slice(2,9);
@@ -169,11 +175,20 @@ function boxes(kind, n, max){
   for(let i=1;i<=max;i++) h += '<button class="box'+(i<=n?' on':'')+'" data-box="'+kind+'" data-i="'+i+'"></button>'+(i%5===0&&i<max?'<span class="gap"></span>':'');
   return h + '</div>';
 }
+/* Tap a trait's name to open its specialty line (full width, under the row).
+   A dotted underline on the name means a specialty is written there. */
 function traitRow(path, name, t, custom){
+  const open = OPEN.has(path);
   return '<div class="row">'+
-    (custom ? '<input class="nm" data-f="'+path+'.n" value="'+esc(name)+'" placeholder="name">' : '<span class="nm">'+esc(name)+'</span>')+
-    '<input class="sp" data-f="'+path+'.spec" value="'+esc(t.spec||"")+'" placeholder="specialty">'+
-    dots(path+'.d', t.d, 5)+(custom ? '<button class="x" data-del="'+path+'">×</button>' : '')+'</div>';
+    '<button class="nm'+(t.spec?' has':'')+'" data-spec="'+path+'">'+(name ? esc(name) : '<span class="ph">name</span>')+'</button>'+
+    dots(path+'.d', t.d, 5)+(custom ? '<button class="x" data-del="'+path+'">×</button>' : '')+'</div>'+
+    (open ? '<div class="spline">'+
+      (custom ? '<input class="spn" data-f="'+path+'.n" value="'+esc(name)+'" placeholder="name">' : '')+
+      '<input data-f="'+path+'.spec" value="'+esc(t.spec||"")+'" placeholder="specialty"></div>' : '');
+}
+function focusLine(path){
+  const nm = document.querySelector('[data-f="'+path+'.n"]'), sp = document.querySelector('[data-f="'+path+'.spec"]');
+  if(nm && !nm.value) nm.focus(); else if(sp && !sp.value) sp.focus();
 }
 function listRow(path, t){
   return '<div class="row"><input class="nm" style="flex:1" data-f="'+path+'.n" value="'+esc(t.n)+'" placeholder="name">'+
@@ -244,10 +259,17 @@ $("app").addEventListener("click", function(ev){
   else if(d.health){ const i = Number(d.health); S.health[i] = ((S.health[i]||0) + 1) % 4; }
   else if(t.id === "expBtn"){ return exportAll(); }
   else if(t.id === "impBtn"){ return $("impFile").click(); }
+  else if(d.spec){
+    if(OPEN.has(d.spec)) OPEN.delete(d.spec); else OPEN.add(d.spec);
+    render(); if(OPEN.has(d.spec)) focusLine(d.spec); return;
+  }
   else if(LOCK){ return; }
   else if(d.dot){ const a = at(d.dot), i = Number(d.i); a[0][a[1]] = (a[0][a[1]] === i) ? i-1 : i; }
-  else if(d.add){ const a = at(d.add+".x"); a[0].push({n:"", d:0, spec:""}); }
-  else if(d.del){ const a = at(d.del); a[0].splice(Number(a[1]), 1); }
+  else if(d.add){
+    const a = at(d.add+".x"); a[0].push({n:"", d:0, spec:""});
+    if(d.add.indexOf("abil.") === 0){ const p = d.add+"."+(a[0].length-1); OPEN.add(p); save(); render(); return focusLine(p); }
+  }
+  else if(d.del){ const a = at(d.del); a[0].splice(Number(a[1]), 1); OPEN.clear(); }
   else if(d.xp){ S.xp.push({when:"", what:"", amt:Number(d.xp)}); }
   else return;
   save(); render();
@@ -263,9 +285,15 @@ $("app").addEventListener("change", function(ev){
     a[0][a[1]] = v;
   } else a[0][a[1]] = t.value;
   save();
+  /* keep the name button in step without a re-render, so the next tap isn't swallowed */
+  const m = /^(.*)\.(spec|n)$/.exec(t.dataset.f), b = m && document.querySelector('button.nm[data-spec="'+m[1]+'"]');
+  if(b){
+    if(m[2] === "spec") b.classList.toggle("has", !!t.value.trim());
+    else b.innerHTML = t.value ? esc(t.value) : '<span class="ph">name</span>';
+  }
   if(t.dataset.num || t.dataset.f === "id.name") render();
 });
-$("slotSel").addEventListener("change", function(){ DB.active = this.value; S = DB.chars.filter(c => c.key === DB.active)[0]; save(); render(); });
+$("slotSel").addEventListener("change", function(){ DB.active = this.value; S = DB.chars.filter(c => c.key === DB.active)[0]; OPEN.clear(); save(); render(); });
 $("lockBtn").addEventListener("click", function(){ LOCK = !LOCK; save(); render(); });
 $("menuBtn").addEventListener("click", function(){
   const c = prompt("Type: new, rename, or delete", "");
