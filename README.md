@@ -7,13 +7,15 @@ pushing to `main` updates every device the next time the app opens with a signal
 The running version shows under the title. Bump `APP_VERSION` / `APP_BUILD` in `index.html`
 and `CACHE` in `sw.js` on every deploy.
 
-## What it does (v2.0.0)
+## What it does (v2.1.0)
 
 - **Sheets:** pick one in the top bar. Ships with **MJD** (old chronicle, S58) and **Mitch**
   (new chronicle draft). The ⋯ button makes, renames or deletes a sheet.
 - **Dots:** tap a dot to set the rating; tap the current rating to drop one. The lock button
   stops accidental dot changes; pools, health, dice and text always work.
-- **Specialties:** a text field beside every Attribute and Ability.
+- **Specialties:** tap an Attribute or Ability name to open a full-width specialty line under
+  it; tap again to close. A dotted underline on the name means a specialty is written.
+  Custom Ability rows put their name field on the same line.
 - **Custom rows:** `+ add` under each Ability column, Disciplines and Backgrounds.
 - **Condition:** Humanity, Willpower (rating and pool), blood pool (20 boxes), health
   (tap cycles / bashing, X lethal, ✱ aggravated).
